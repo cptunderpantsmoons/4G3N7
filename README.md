@@ -72,7 +72,7 @@ Upload files directly to 4G3N7's desktop and it can:
 
 ```bash
 git clone https://github.com/4g3n7/app.git
-cd 4g3n7
+cd app
 
 # Add your AI provider key (choose one)
 echo "ANTHROPIC_API_KEY=sk-ant-..." > docker/.env
@@ -243,7 +243,7 @@ Deploy on Kubernetes with Helm:
 ```bash
 # Clone the repository
 git clone https://github.com/4g3n7/app.git
-cd 4g3n7
+cd app
 
 # Install with Helm
 helm install 4g3n7 ./helm \
