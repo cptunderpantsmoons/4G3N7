@@ -1,0 +1,88 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "replication_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # PostgreSQL Primary
+  - job_name: 'postgres-primary'
+    static_configs:
+      - targets: ['postgres-primary:5432']
+    metrics_path: /metrics
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # PostgreSQL Replica 1
+  - job_name: 'postgres-replica-1'
+    static_configs:
+      - targets: ['postgres-replica-1:5432']
+    metrics_path: /metrics
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # PostgreSQL Replica 2
+  - job_name: 'postgres-replica-2'
+    static_configs:
+      - targets: ['postgres-replica-2:5432']
+    metrics_path: /metrics
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # PgBouncer Primary
+  - job_name: 'pgbouncer-primary'
+    static_configs:
+      - targets: ['pgbouncer-primary:6432']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # PgBouncer Replica
+  - job_name: 'pgbouncer-replica'
+    static_configs:
+      - targets: ['pgbouncer-replica:6433']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # Health Monitor Metrics
+  - job_name: 'health-monitor'
+    static_configs:
+      - targets: ['health-monitor:8080']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # Node Exporter for system metrics (if deployed)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets:
+        - 'postgres-primary:9100'
+        - 'postgres-replica-1:9100'
+        - 'postgres-replica-2:9100'
+    scrape_interval: 30s
+
+  # PostgreSQL Exporter
+  - job_name: 'postgres-exporter-primary'
+    static_configs:
+      - targets: ['postgres-exporter-primary:9187']
+    scrape_interval: 10s
+
+  - job_name: 'postgres-exporter-replica-1'
+    static_configs:
+      - targets: ['postgres-exporter-replica-1:9187']
+    scrape_interval: 10s
+
+  - job_name: 'postgres-exporter-replica-2'
+    static_configs:
+      - targets: ['postgres-exporter-replica-2:9187']
+    scrape_interval: 10s

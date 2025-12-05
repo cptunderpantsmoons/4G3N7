@@ -5,7 +5,7 @@ services:
     # Build from source
     build:
       context: ../packages/
-      dockerfile: bytebotd/Dockerfile
+      dockerfile: 4g3n7d/Dockerfile
     # Use pre-built image
     image: ghcr.io/4g3n7/4g3n7-desktop:edge
     shm_size: "2g"
@@ -38,7 +38,7 @@ services:
   4g3n7-agent:
     build:
       context: ../packages/
-      dockerfile: bytebot-agent/Dockerfile
+      dockerfile: 4g3n7-agent/Dockerfile
     # Use pre-built image
     image: ghcr.io/4g3n7/4g3n7-agent:edge
     container_name: 4g3n7-agent
@@ -77,7 +77,7 @@ services:
   4g3n7-ui:
     build:
       context: ../packages/
-      dockerfile: bytebot-ui/Dockerfile
+      dockerfile: 4g3n7-ui/Dockerfile
       args:
         - G3N7_AGENT_BASE_URL=${G3N7_AGENT_BASE_URL:-http://4g3n7-agent:9991}
         - G3N7_DESKTOP_VNC_URL=${G3N7_DESKTOP_VNC_URL:-http://4g3n7-desktop:9990/websockify}

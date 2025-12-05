@@ -1,0 +1,326 @@
+version: '3.8'
+
+name: 4g3n7-replication
+
+services:
+  # PostgreSQL Primary Database
+  postgres-primary:
+    image: postgres:16-alpine
+    container_name: 4g3n7-postgres-primary
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-4g3n7db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_REPLICATION_USER: ${POSTGRES_REPLICATION_USER:-replicator}
+      POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD:-changeme}
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+      - ./configs/postgres/primary/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./configs/postgres/primary/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - ./scripts/init-primary.sh:/docker-entrypoint-initdb.d/init-primary.sh
+    ports:
+      - "${PRIMARY_PORT:-5432}:5432"
+    command: >
+      postgres
+      -c config_file=/etc/postgresql/postgresql.conf
+      -c hba_file=/etc/postgresql/pg_hba.conf
+    networks:
+      - replication-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-4g3n7db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # PostgreSQL Replica 1
+  postgres-replica-1:
+    image: postgres:16-alpine
+    container_name: 4g3n7-postgres-replica-1
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-4g3n7db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PGUSER: ${POSTGRES_USER:-postgres}
+      POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD:-changeme}
+      POSTGRES_PRIMARY_HOST: postgres-primary
+      POSTGRES_PRIMARY_PORT: ${PRIMARY_PORT:-5432}
+      POSTGRES_REPLICATION_USER: ${POSTGRES_REPLICATION_USER:-replicator}
+      REPLICA_ID: 1
+    volumes:
+      - postgres_replica_1_data:/var/lib/postgresql/data
+      - ./configs/postgres/replica/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./scripts/init-replica.sh:/docker-entrypoint-initdb.d/init-replica.sh
+    ports:
+      - "${REPLICA_1_PORT:-5433}:5432"
+    command: >
+      postgres
+      -c config_file=/etc/postgresql/postgresql.conf
+    networks:
+      - replication-network
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-4g3n7db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # PostgreSQL Replica 2
+  postgres-replica-2:
+    image: postgres:16-alpine
+    container_name: 4g3n7-postgres-replica-2
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-4g3n7db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PGUSER: ${POSTGRES_USER:-postgres}
+      POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD:-changeme}
+      POSTGRES_PRIMARY_HOST: postgres-primary
+      POSTGRES_PRIMARY_PORT: ${PRIMARY_PORT:-5432}
+      POSTGRES_REPLICATION_USER: ${POSTGRES_REPLICATION_USER:-replicator}
+      REPLICA_ID: 2
+    volumes:
+      - postgres_replica_2_data:/var/lib/postgresql/data
+      - ./configs/postgres/replica/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./scripts/init-replica.sh:/docker-entrypoint-initdb.d/init-replica.sh
+    ports:
+      - "${REPLICA_2_PORT:-5434}:5432"
+    command: >
+      postgres
+      -c config_file=/etc/postgresql/postgresql.conf
+    networks:
+      - replication-network
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-4g3n7db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # PgBouncer for connection pooling (Primary)
+  pgbouncer-primary:
+    image: pgbouncer/pgbouncer:latest
+    container_name: 4g3n7-pgbouncer-primary
+    restart: unless-stopped
+    environment:
+      DATABASES_HOST: postgres-primary
+      DATABASES_PORT: 5432
+      DATABASES_USER: ${POSTGRES_USER:-postgres}
+      DATABASES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DATABASES_DBNAME: ${POSTGRES_DB:-4g3n7db}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 200
+      DEFAULT_POOL_SIZE: 20
+      MIN_POOL_SIZE: 5
+      RESERVE_POOL_SIZE: 5
+      RESERVE_POOL_TIMEOUT: 5
+      SERVER_RESET_QUERY: DISCARD ALL
+      SERVER_CHECK_DELAY: 30
+      SERVER_CHECK_QUERY: select 1
+      SERVER_LIFETIME: 3600
+      SERVER_IDLE_TIMEOUT: 600
+      ADMIN_USERS: ${POSTGRES_USER:-postgres}
+      STATS_USERS: ${POSTGRES_USER:-postgres}
+    volumes:
+      - ./configs/pgbouncer/primary/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+      - ./configs/pgbouncer/primary/userlist.txt:/etc/pgbouncer/userlist.txt
+    ports:
+      - "${PGBOUNCER_PRIMARY_PORT:-6432}:6432"
+    networks:
+      - replication-network
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgbouncer", "--show-config"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PgBouncer for replica connection pooling
+  pgbouncer-replica:
+    image: pgbouncer/pgbouncer:latest
+    container_name: 4g3n7-pgbouncer-replica
+    restart: unless-stopped
+    environment:
+      DATABASES_HOST: postgres-replica-1
+      DATABASES_PORT: 5432
+      DATABASES_USER: ${POSTGRES_USER:-postgres}
+      DATABASES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DATABASES_DBNAME: ${POSTGRES_DB:-4g3n7db}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 200
+      DEFAULT_POOL_SIZE: 20
+      MIN_POOL_SIZE: 5
+      RESERVE_POOL_SIZE: 5
+      RESERVE_POOL_TIMEOUT: 5
+      SERVER_RESET_QUERY: DISCARD ALL
+      SERVER_CHECK_DELAY: 30
+      SERVER_CHECK_QUERY: select 1
+      SERVER_LIFETIME: 3600
+      SERVER_IDLE_TIMEOUT: 600
+      ADMIN_USERS: ${POSTGRES_USER:-postgres}
+      STATS_USERS: ${POSTGRES_USER:-postgres}
+    volumes:
+      - ./configs/pgbouncer/replica/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+      - ./configs/pgbouncer/replica/userlist.txt:/etc/pgbouncer/userlist.txt
+    ports:
+      - "${PGBOUNCER_REPLICA_PORT:-6433}:6432"
+    networks:
+      - replication-network
+    depends_on:
+      postgres-replica-1:
+        condition: service_healthy
+      postgres-replica-2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgbouncer", "--show-config"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Health Monitor Service
+  health-monitor:
+    image: postgres:16-alpine
+    container_name: 4g3n7-health-monitor
+    restart: unless-stopped
+    environment:
+      PRIMARY_HOST: postgres-primary
+      PRIMARY_PORT: 5432
+      REPLICA_HOSTS: postgres-replica-1:5432,postgres-replica-2:5432
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-4g3n7db}
+      HEALTH_CHECK_INTERVAL: ${HEALTH_CHECK_INTERVAL:-30}
+      MAX_REPLICATION_LAG: ${MAX_REPLICATION_LAG:-10}
+      MAX_RESPONSE_TIME: ${MAX_RESPONSE_TIME:-5000}
+      FAILOVER_ENABLED: ${FAILOVER_ENABLED:-true}
+      ALERT_WEBHOOK: ${ALERT_WEBHOOK:-}
+    volumes:
+      - ./scripts/health-monitor.sh:/scripts/health-monitor.sh
+      - ../logs:/logs
+      - ../metrics:/metrics
+    networks:
+      - replication-network
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      postgres-replica-1:
+        condition: service_healthy
+      postgres-replica-2:
+        condition: service_healthy
+    command: >
+      sh -c "
+      chmod +x /scripts/health-monitor.sh &&
+      apk add --no-cache curl jq &&
+      /scripts/health-monitor.sh monitor
+      "
+
+  # Failover Manager Service (optional - disabled by default)
+  failover-manager:
+    image: postgres:16-alpine
+    container_name: 4g3n7-failover-manager
+    restart: unless-stopped
+    environment:
+      PRIMARY_HOST: postgres-primary
+      PRIMARY_PORT: 5432
+      REPLICA_HOSTS: postgres-replica-1:5432,postgres-replica-2:5432
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-4g3n7db}
+      FAILOVER_ENABLED: ${FAILOVER_ENABLED:-true}
+      AUTO_FAILOVER: ${AUTO_FAILOVER:-false}
+      ALERT_WEBHOOK: ${ALERT_WEBHOOK:-}
+    volumes:
+      - ./scripts/failover-manager.sh:/scripts/failover-manager.sh
+      - ../logs:/logs
+      - ../state:/state
+    networks:
+      - replication-network
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      postgres-replica-1:
+        condition: service_healthy
+      postgres-replica-2:
+        condition: service_healthy
+    command: >
+      sh -c "
+      chmod +x /scripts/failover-manager.sh &&
+      apk add --no-cache curl jq &&
+      /scripts/failover-manager.sh monitor
+      "
+    profiles:
+      - failover
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: 4g3n7-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./configs/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    networks:
+      - replication-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    profiles:
+      - monitoring
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: 4g3n7-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./configs/grafana/provisioning:/etc/grafana/provisioning
+      - ./configs/grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    networks:
+      - replication-network
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
+networks:
+  replication-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres_primary_data:
+    driver: local
+  postgres_replica_1_data:
+    driver: local
+  postgres_replica_2_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local

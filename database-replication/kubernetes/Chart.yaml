@@ -1,0 +1,31 @@
+apiVersion: v2
+name: 4g3n7-replication
+description: PostgreSQL replication system for 4G3N7 with high availability and automatic failover
+type: application
+version: 1.0.0
+appVersion: "16.0"
+keywords:
+  - postgresql
+  - replication
+  - high-availability
+  - failover
+  - 4g3n7
+  - database
+home: https://github.com/4g3n7/4G3N7
+sources:
+  - https://github.com/4g3n7/4G3N7/tree/main/database-replication
+maintainers:
+  - name: 4G3N7 Team
+    email: team@4g3n7.dev
+dependencies:
+  - name: postgresql
+    version: 12.x.x
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: pgpool2
+    version: 2.x.x
+    repository: https://charts.bitnami.com/bitnami
+    condition: pgpool2.enabled
+annotations:
+  category: Database
+  licenses: Apache-2.0

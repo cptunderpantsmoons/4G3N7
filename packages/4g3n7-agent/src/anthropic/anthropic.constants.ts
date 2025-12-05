@@ -3,14 +3,14 @@ import { BytebotAgentModel } from '../agent/agent.types';
 export const ANTHROPIC_MODELS: BytebotAgentModel[] = [
   {
     provider: 'anthropic',
-    name: 'claude-opus-4-1-20250805',
-    title: 'Claude Opus 4.1',
+    name: 'claude-4-5-sonnet-20241022',
+    title: 'Claude 4.5 Sonnet (Latest)',
     contextWindow: 200000,
   },
   {
     provider: 'anthropic',
-    name: 'claude-sonnet-4-20250514',
-    title: 'Claude Sonnet 4',
+    name: 'claude-opus-4-1-20250805',
+    title: 'Claude Opus 4.1',
     contextWindow: 200000,
   },
 ];

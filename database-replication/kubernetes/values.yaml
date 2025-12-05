@@ -1,0 +1,397 @@
+# 4G3N7 PostgreSQL Replication Helm Chart Values
+
+# Global settings
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: "fast-ssd"
+  postgresql:
+    auth:
+      postgresPassword: "changeme"
+      username: "postgres"
+      password: "changeme"
+      database: "4g3n7db"
+      replicationUser: "replicator"
+      replicationPassword: "changeme_strong_password"
+
+# Primary PostgreSQL configuration
+postgresql:
+  enabled: true
+  primary:
+    name: postgres-primary
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClass: fast-ssd
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+    extraEnvVars:
+      - name: POSTGRES_REPLICATION_USER
+        value: replicator
+      - name: POSTGRES_REPLICATION_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: postgres-credentials
+            key: REPLICATION_PASSWORD
+    configuration: |
+      # Connection Settings
+      listen_addresses = '*'
+      port = 5432
+      max_connections = 200
+      superuser_reserved_connections = 3
+
+      # Memory Settings
+      shared_buffers = 2GB
+      effective_cache_size = 6GB
+      maintenance_work_mem = 512MB
+      checkpoint_completion_target = 0.9
+      wal_buffers = 64MB
+      default_statistics_target = 100
+
+      # WAL Settings for Replication
+      wal_level = replica
+      fsync = on
+      synchronous_commit = on
+      wal_sync_method = fsync
+      full_page_writes = on
+      wal_compression = on
+      wal_log_hints = on
+      max_wal_size = 4GB
+      min_wal_size = 1GB
+
+      # Replication Settings
+      max_wal_senders = 10
+      max_replication_slots = 10
+      wal_keep_size = 8GB
+      track_commit_timestamp = on
+      hot_standby = on
+
+      # Archive Settings
+      archive_mode = on
+      archive_command = 'test ! -f /var/lib/postgresql/archive/%f && cp %p /var/lib/postgresql/archive/%f'
+
+      # Logging Settings
+      log_destination = 'stderr'
+      logging_collector = on
+      log_directory = 'log'
+      log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+      log_rotation_age = 1d
+      log_rotation_size = 100MB
+      log_min_messages = warning
+      log_min_duration_statement = 1000
+      log_checkpoints = on
+      log_connections = on
+      log_disconnections = on
+      log_lock_waits = on
+      log_replication_commands = on
+
+    pgHbaConfiguration: |
+      # TYPE  DATABASE        USER            ADDRESS                 METHOD
+      local   all             postgres                                peer
+      local   all             all                                     scram-sha-256
+      host    all             all             0.0.0.0/0               scram-sha-256
+      host    replication     replicator      0.0.0.0/0               scram-sha-256
+
+    initdbScripts:
+      001-create-replication-user.sh: |
+        #!/bin/bash
+        set -e
+        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+            CREATE USER $POSTGRES_REPLICATION_USER WITH REPLICATION ENCRYPTED PASSWORD '$POSTGRES_REPLICATION_PASSWORD';
+            ALTER USER $POSTGRES_REPLICATION_USER CONNECTION LIMIT 10;
+        EOSQL
+
+# Replica PostgreSQL configuration
+readReplicas:
+  replicaCount: 2
+  name: postgres-replica
+  persistence:
+    enabled: true
+    size: 100Gi
+    storageClass: fast-ssd
+  resources:
+    limits:
+      cpu: 1500m
+      memory: 3Gi
+    requests:
+      cpu: 750m
+      memory: 1.5Gi
+  configuration: |
+    # PostgreSQL Replica Configuration
+    listen_addresses = '*'
+    port = 5432
+    max_connections = 200
+    hot_standby = on
+    max_standby_streaming_delay = 30s
+    max_standby_archive_delay = 30s
+    primary_conninfo = 'host=postgres-primary port=5432 user=replicator'
+
+# PgPool2 for connection pooling and load balancing
+pgpool2:
+  enabled: true
+  name: pgpool
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  configuration:
+    pcp:
+      port: 9898
+      socketDir: /var/run/postgresql
+    backendHosts:
+      - postgres-primary
+      - postgres-replica-0
+      - postgres-replica-1
+    backendPorts:
+      - 5432
+      - 5432
+      - 5432
+    backendWeights:
+      - 1
+      - 1
+      - 1
+    backendDataDirectory:
+      - /var/lib/postgresql/data
+      - /var/lib/postgresql/data
+      - /var/lib/postgresql/data
+    backendFlag:
+      - ALLOW_TO_FAILOVER
+      - ALLOW_TO_FAILOVER
+      - ALLOW_TO_FAILOVER
+    authentication:
+      replication:
+        username: replicator
+        password: changeme_strong_password
+      srCheckUser: postgres
+      srCheckPassword: changeme
+    watchdog:
+      enabled: true
+      delegationIp: 192.168.1.100
+    healthCheck:
+      enabled: true
+      healthCheckPeriod: 30
+      healthCheckTimeout: 20
+      healthCheckUser: postgres
+      healthCheckPassword: changeme
+      healthCheckDatabase: 4g3n7db
+
+# Service configuration
+service:
+  type: ClusterIP
+  ports:
+    postgresql: 5432
+    pgpool: 9999
+  annotations: {}
+  labels: {}
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "TCP"
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+  hosts:
+    - host: postgres.4g3n7.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Monitoring and observability
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    interval: 30s
+    scrapeTimeout: 10s
+  prometheusRule:
+    enabled: true
+    namespace: monitoring
+    rules:
+      - alert: PostgreSQLPrimaryDown
+        expr: pg_up{instance="postgres-primary"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL primary is down"
+          description: "PostgreSQL primary instance has been down for more than 1 minute"
+
+      - alert: PostgreSQLReplicationLag
+        expr: pg_replication_lag_seconds > 30
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL replication lag is high"
+          description: "Replication lag is {{ $value }} seconds, which exceeds the threshold"
+
+  grafanaDashboard:
+    enabled: true
+    namespace: monitoring
+    configmaps: []
+
+# Health monitoring and failover
+healthMonitor:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: postgres
+    tag: 16-alpine
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  config:
+    healthCheckInterval: 30
+    maxReplicationLag: 10
+    maxResponseTime: 5000
+    failoverEnabled: true
+    autoFailover: false
+    alertWebhook: ""
+
+# Backup and recovery
+backup:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: postgres
+    tag: 16-alpine
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention: "7d"
+  storage:
+    type: s3
+    bucket: "4g3n7-postgres-backups"
+    region: "us-west-2"
+    accessKey: ""
+    secretKey: ""
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Security context
+securityContext:
+  runAsUser: 999
+  runAsGroup: 999
+  fsGroup: 999
+  fsGroupChangePolicy: "Always"
+
+# Pod security policies
+podSecurityPolicy:
+  enabled: false
+
+# Network policies
+networkPolicy:
+  enabled: true
+  ingress:
+    - from: []
+      ports:
+        - protocol: TCP
+          port: 5432
+  egress:
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 5432
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+# Resource quotas
+resourceQuota:
+  enabled: false
+  limits:
+    requests.cpu: "4"
+    requests.memory: "8Gi"
+    limits.cpu: "8"
+    limits.memory: "16Gi"
+    persistentvolumeclaims: "3"
+    requests.storage: "300Gi"
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+  maxUnavailable: ""
+
+# Affinity and anti-affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - postgresql
+          topologyKey: kubernetes.io/hostname
+
+# Tolerations
+tolerations: []
+
+# Node selector
+nodeSelector: {}
+
+# Extra labels
+commonLabels: {}
+
+# Extra annotations
+commonAnnotations: {}
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod labels
+podLabels: {}
+
+# Init containers
+initContainers: []
+
+# Sidecar containers
+sidecars: []
+
+# Extra volume mounts
+extraVolumeMounts: []
+
+# Extra volumes
+extraVolumes: []
+
+# Service account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# RBAC
+rbac:
+  create: true
+
+# Horizontal pod autoscaler
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80

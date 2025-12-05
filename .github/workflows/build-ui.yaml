@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "packages/bytebot-ui/**"
+      - "packages/4g3n7-ui/**"
       - "packages/shared/**"
 
 permissions:
@@ -40,7 +40,7 @@ jobs:
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: ./packages
-          file: ./packages/bytebot-ui/Dockerfile
+          file: ./packages/4g3n7-ui/Dockerfile
           platforms: linux/amd64,linux/arm64
 
           push: true

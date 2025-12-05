@@ -121,18 +121,38 @@ model Message {
   @@index([summaryId, createdAt])                 // For summary message ordering
 }
 
+enum MigrationStatus {
+  PENDING
+  MIGRATED
+  FAILED
+}
+
 model File {
-  id            String      @id @default(uuid())
-  name          String
-  type          String      // MIME type
-  size          Int         // Size in bytes
-  data          String      // Base64 encoded file data
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                    String          @id @default(uuid())
+  name                  String
+  type                  String          // MIME type
+  size                  Int             // Size in bytes
+
+  // Base64 storage (legacy - to be migrated)
+  data                  String?         // Base64 encoded file data (nullable after migration)
+
+  // Object storage fields
+  objectStorageKey      String?         // Key in object storage (S3/MinIO)
+  objectStorageSize     Int?            // Size in object storage
+  originalSize          Int?            // Original file size before migration
+
+  // Migration tracking
+  migrationStatus       MigrationStatus? // Migration status
+  migratedAt            DateTime?       // When migration occurred
+  migrationError        String?         // Migration error message
+  compressionRatio      Float?          // Size reduction ratio after migration
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
 
   // Relations
-  task          Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  taskId        String
+  task                  Task            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId                String
 
   // Performance indexes
   @@index([taskId])                               // For task file retrieval
@@ -140,5 +160,11 @@ model File {
   @@index([size])                                // For size-based queries
   @@index([createdAt])                            // For file ordering
   @@index([name])                                 // For file name searches
+
+  // Migration-specific indexes
+  @@index([migrationStatus])                      // For migration progress tracking
+  @@index([objectStorageKey])                     // For object storage lookups
+  @@index([migratedAt])                           // For migration history
+  @@index([migrationStatus, migratedAt])          // For migration management
 }
 

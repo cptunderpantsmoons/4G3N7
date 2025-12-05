@@ -1,0 +1,217 @@
+groups:
+  - name: postgresql_replication
+    rules:
+      # Primary database alerts
+      - alert: PostgreSQLPrimaryDown
+        expr: pg_up{job="postgres-primary"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: postgresql-replication
+        annotations:
+          summary: "PostgreSQL primary database is down"
+          description: "PostgreSQL primary database has been down for more than 1 minute"
+          runbook_url: "https://docs.4g3n7.dev/runbooks/postgresql-primary-down"
+
+      - alert: PostgreSQLPrimaryHighConnections
+        expr: pg_stat_database_numbackends{job="postgres-primary"} > 150
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql-replication
+        annotations:
+          summary: "High number of connections to PostgreSQL primary"
+          description: "PostgreSQL primary has {{ $value }} active connections (threshold: 150)"
+
+      - alert: PostgreSQLPrimaryHighCPU
+        expr: rate(cpu_usage_percent{job="postgres-primary"}[5m]) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql-replication
+        annotations:
+          summary: "High CPU usage on PostgreSQL primary"
+          description: "CPU usage is {{ $value }}% on PostgreSQL primary"
+
+      - alert: PostgreSQLPrimaryHighMemory
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql-replication
+        annotations:
+          summary: "High memory usage on PostgreSQL primary"
+          description: "Memory usage is {{ $value }}% on PostgreSQL primary"
+
+      # Replica database alerts
+      - alert: PostgreSQLReplicaDown
+        expr: pg_up{job=~"postgres-replica-.*"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: postgresql-replication
+        annotations:
+          summary: "PostgreSQL replica database is down"
+          description: "PostgreSQL replica {{ $labels.job }} has been down for more than 2 minutes"
+
+      - alert: PostgreSQLReplicationLagHigh
+        expr: pg_replication_lag_seconds > 30
+        for: 2m
+        labels:
+          severity: warning
+          service: postgresql-replication
+        annotations:
+          summary: "High PostgreSQL replication lag"
+          description: "Replication lag is {{ $value }} seconds for {{ $labels.job }} (threshold: 30s)"
+
+      - alert: PostgreSQLReplicationLagCritical
+        expr: pg_replication_lag_seconds > 300
+        for: 1m
+        labels:
+          severity: critical
+          service: postgresql-replication
+        annotations:
+          summary: "Critical PostgreSQL replication lag"
+          description: "Replication lag is {{ $value }} seconds for {{ $labels.job }} (threshold: 300s)"
+
+      - alert: PostgreSQLReplicationStopped
+        expr: pg_stat_replication{state!~"streaming|startup"} == 1
+        for: 1m
+        labels:
+          severity: critical
+          service: postgresql-replication
+        annotations:
+          summary: "PostgreSQL replication has stopped"
+          description: "Replication state is {{ $labels.state }} for {{ $labels.application_name }}"
+
+      # PgBouncer alerts
+      - alert: PgBouncerHighConnections
+        expr: pgbouncer_pools_server_active_connections > 150
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql-replication
+        annotations:
+          summary: "High number of active connections in PgBouncer"
+          description: "PgBouncer has {{ $value }} active connections for pool {{ $labels.pool }}"
+
+      - alert: PgBouncerHighWaitTime
+        expr: rate(pgbouncer_pools_server_wait_time_seconds_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql-replication
+        annotations:
+          summary: "High wait time in PgBouncer"
+          description: "Average wait time is {{ $value }} seconds for pool {{ $labels.pool }}"
+
+      # Disk space alerts
+      - alert: PostgreSQLDiskSpaceHigh
+        expr: (node_filesystem_avail_bytes{mountpoint="/var/lib/postgresql/data"} / node_filesystem_size_bytes{mountpoint="/var/lib/postgresql/data"}) * 100 < 20
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql-replication
+        annotations:
+          summary: "Low disk space on PostgreSQL server"
+          description: "Disk space is {{ $value }}% full on {{ $labels.instance }}"
+
+      - alert: PostgreSQLDiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{mountpoint="/var/lib/postgresql/data"} / node_filesystem_size_bytes{mountpoint="/var/lib/postgresql/data"}) * 100 < 10
+        for: 1m
+        labels:
+          severity: critical
+          service: postgresql-replication
+        annotations:
+          summary: "Critical disk space on PostgreSQL server"
+          description: "Disk space is {{ $value }}% full on {{ $labels.instance }}"
+
+      # WAL size alerts
+      - alert: PostgreSQLWALSizeHigh
+        expr: pg_stat_wal{wal_bytes} > 10 * 1024 * 1024 * 1024  # 10GB
+        for: 10m
+        labels:
+          severity: warning
+          service: postgresql-replication
+        annotations:
+          summary: "High WAL size on PostgreSQL"
+          description: "WAL size is {{ $value | humanize1024 }} on {{ $labels.job }}"
+
+      # Connection pool alerts
+      - alert: PgBouncerPoolExhausted
+        expr: pgbouncer_pools_server_login_total - pgbouncer_pools_server_logout_total > pgbouncer_settings_max_client_conn * 0.9
+        for: 2m
+        labels:
+          severity: warning
+          service: postgresql-replication
+        annotations:
+          summary: "PgBouncer connection pool nearly exhausted"
+          description: "{{ $value }} connections in use, near maximum of {{ $query \"pgbouncer_settings_max_client_conn\" }}"
+
+      # Performance alerts
+      - alert: PostgreSQLSlowQueries
+        expr: rate(pg_stat_statements_mean_time_seconds[5m]) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql-replication
+        annotations:
+          summary: "Slow queries detected on PostgreSQL"
+          description: "Average query time is {{ $value }} seconds on {{ $labels.job }}"
+
+      - alert: PostgreSQLHighLockWaits
+        expr: pg_locks_count{mode="ExclusiveLock"} > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql-replication
+        annotations:
+          summary: "High number of exclusive locks"
+          description: "{{ $value }} exclusive locks detected on {{ $labels.job }}"
+
+  - name: postgresql_availability
+    rules:
+      # Replication availability
+      - alert: PostgreSQLReplicasUnavailable
+        expr: count(pg_up{job=~"postgres-replica-.*"} == 1) < 1
+        for: 3m
+        labels:
+          severity: critical
+          service: postgresql-replication
+        annotations:
+          summary: "No PostgreSQL replicas available"
+          description: "{{ $value }} out of expected replicas are available"
+
+      - alert: PostgreSQLReplicaCountLow
+        expr: count(pg_up{job=~"postgres-replica-.*"} == 1) < 2
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql-replication
+        annotations:
+          summary: "Low number of PostgreSQL replicas"
+          description: "Only {{ $value }} replicas available, expected at least 2"
+
+  - name: postgresql_recovery
+    rules:
+      # Recovery time objectives
+      - alert: PostgreSQLRTOExceeded
+        expr: time() - pg_last_xact_replay_timestamp > 300  # 5 minutes
+        for: 1m
+        labels:
+          severity: critical
+          service: postgresql-replication
+        annotations:
+          summary: "Recovery Time Objective exceeded"
+          description: "Replica {{ $labels.job }} is {{ $value }} seconds behind primary"
+
+      # Point-in-time recovery
+      - alert: PostgreSQLPITRLagHigh
+        expr: pg_xlog_location_diff_bytes / 1024 / 1024 > 1024  # 1GB
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql-replication
+        annotations:
+          summary: "High PITR lag"
+          description: "PITR lag is {{ $value }}MB on {{ $labels.job }}"

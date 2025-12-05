@@ -15,6 +15,7 @@ import { SummariesModule } from './summaries/summaries.modue';
 import { ProxyModule } from './proxy/proxy.module';
 import { OpenRouterModule } from './openrouter/openrouter.module';
 import { QwenModule } from './qwen/qwen.module';
+import { FileStorageModule } from './file-storage/file-storage.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { QwenModule } from './qwen/qwen.module';
     ProxyModule,
     OpenRouterModule,
     QwenModule,
+    FileStorageModule,
     PrismaModule,
   ],
   controllers: [AppController],

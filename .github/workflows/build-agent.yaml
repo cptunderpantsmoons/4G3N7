@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "packages/bytebot-agent/**"
+      - "packages/4g3n7-agent/**"
       - "packages/shared/**"
 
 permissions:
@@ -40,7 +40,7 @@ jobs:
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: ./packages
-          file: ./packages/bytebot-agent/Dockerfile
+          file: ./packages/4g3n7-agent/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           cache-from: type=gha
