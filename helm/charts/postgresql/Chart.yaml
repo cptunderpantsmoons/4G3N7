@@ -1,0 +1,14 @@
+apiVersion: v2
+name: postgresql
+description: A Helm chart for PostgreSQL database
+type: application
+version: 0.1.0
+appVersion: "16-alpine"
+keywords:
+  - postgresql
+  - database
+  - sql
+maintainers:
+  - name: 4G3N7 Team
+sources:
+  - https://github.com/4g3n7-ai/4g3n7

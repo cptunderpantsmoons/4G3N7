@@ -1,0 +1,19 @@
+name: 4g3n7
+
+services:
+  4g3n7-desktop:
+    # Build from source
+    build:
+      context: ../packages/
+      dockerfile: 4g3n7d/Dockerfile
+    # Use pre-built image
+    image: ghcr.io/4g3n7/4g3n7-desktop:edge
+    shm_size: "2g"
+    container_name: 4g3n7-desktop
+    restart: unless-stopped
+    hostname: computer
+    privileged: true
+    ports:
+      - "9990:9990" # 4g3n7d service & noVNC
+    environment:
+      - DISPLAY=:0

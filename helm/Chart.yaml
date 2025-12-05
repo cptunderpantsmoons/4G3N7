@@ -1,0 +1,32 @@
+apiVersion: v2
+name: 4g3n7
+description: 4G3N7 - Complete deployment package
+type: application
+version: 0.1.0
+appVersion: "edge"
+dependencies:
+  - name: postgresql
+    version: 0.1.0
+    repository: file://./charts/postgresql
+    condition: postgresql.enabled
+  - name: 4g3n7-desktop
+    version: 0.1.0
+    repository: file://./charts/bytebot-desktop
+  - name: 4g3n7-agent
+    version: 0.1.0
+    repository: file://./charts/bytebot-agent
+  - name: 4g3n7-ui
+    version: 0.1.0
+    repository: file://./charts/bytebot-ui
+  - name: 4g3n7-llm-proxy
+    version: 0.1.0
+    repository: file://./charts/bytebot-llm-proxy
+    condition: 4g3n7-llm-proxy.enabled
+keywords:
+  - 4g3n7
+  - automation
+  - remote-desktop
+maintainers:
+  - name: 4G3N7 Team
+sources:
+  - https://github.com/4g3n7-ai/4g3n7

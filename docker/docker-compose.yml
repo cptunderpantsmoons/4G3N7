@@ -1,0 +1,121 @@
+name: 4g3n7
+
+services:
+  4g3n7-desktop:
+    # Build from source
+    build:
+      context: ../packages/
+      dockerfile: bytebotd/Dockerfile
+    # Use pre-built image
+    image: ghcr.io/4g3n7/4g3n7-desktop:edge
+    shm_size: "2g"
+    container_name: 4g3n7-desktop
+    restart: unless-stopped
+    hostname: computer
+    privileged: true
+    ports:
+      - "9990:9990" # 4g3n7d service & noVNC
+    environment:
+      - DISPLAY=:0
+    networks:
+      - 4g3n7-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: 4g3n7-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=4g3n7db
+    networks:
+      - 4g3n7-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  4g3n7-agent:
+    build:
+      context: ../packages/
+      dockerfile: bytebot-agent/Dockerfile
+    # Use pre-built image
+    image: ghcr.io/4g3n7/4g3n7-agent:edge
+    container_name: 4g3n7-agent
+    restart: unless-stopped
+    ports:
+      - "9991:9991"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/4g3n7db}
+      - G3N7_DESKTOP_BASE_URL=${G3N7_DESKTOP_BASE_URL:-http://4g3n7-desktop:9990}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - NODE_ENV=production
+    depends_on:
+      - postgres
+    networks:
+      - 4g3n7-network
+    # Resource limits for performance optimization
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9991/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  4g3n7-ui:
+    build:
+      context: ../packages/
+      dockerfile: bytebot-ui/Dockerfile
+      args:
+        - G3N7_AGENT_BASE_URL=${G3N7_AGENT_BASE_URL:-http://4g3n7-agent:9991}
+        - G3N7_DESKTOP_VNC_URL=${G3N7_DESKTOP_VNC_URL:-http://4g3n7-desktop:9990/websockify}
+    # Use pre-built image
+    image: ghcr.io/4g3n7/4g3n7-ui:edge
+    container_name: 4g3n7-ui
+    restart: unless-stopped
+    ports:
+      - "9992:9992"
+    environment:
+      - NODE_ENV=production
+      - G3N7_AGENT_BASE_URL=${G3N7_AGENT_BASE_URL:-http://4g3n7-agent:9991}
+      - G3N7_DESKTOP_VNC_URL=${G3N7_DESKTOP_VNC_URL:-http://4g3n7-desktop:9990/websockify}
+    depends_on:
+      - 4g3n7-agent
+    networks:
+      - 4g3n7-network
+    # Resource limits for performance optimization
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9992/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+networks:
+  4g3n7-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

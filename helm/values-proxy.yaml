@@ -1,0 +1,52 @@
+# Proxy configuration for 4G3N7 with LiteLLM
+# This values file enables the LiteLLM proxy and configures the agent to use it
+# Usage: helm install 4g3n7 . -f values-proxy.yaml
+
+# Enable LiteLLM proxy
+4g3n7-llm-proxy:
+  enabled: true
+  fullnameOverride: "4g3n7-llm-proxy"
+  env:
+    # Set your API keys here
+    ANTHROPIC_API_KEY: ""
+    OPENAI_API_KEY: ""
+    GEMINI_API_KEY: ""
+  service:
+    type: ClusterIP
+    port: 4000
+  resources:
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Configure agent to use the proxy
+4g3n7-agent:
+  config:
+    llmProxyUrl: "http://4g3n7-llm-proxy:4000"
+  # Don't set API keys on the agent when using proxy
+  env:
+    ANTHROPIC_API_KEY: ""
+    OPENAI_API_KEY: ""
+    GEMINI_API_KEY: ""
+
+# All other services remain the same
+postgresql:
+  enabled: true
+
+4g3n7-desktop:
+  enabled: true
+
+4g3n7-ui:
+  enabled: true
+
+# Optional: Enable ingress for external access
+ingress:
+  enabled: false
+  className: "nginx"
+  host: 4g3n7.example.com
+  tls:
+    enabled: true
+    secretName: 4g3n7-tls

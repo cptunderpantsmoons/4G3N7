@@ -1,0 +1,285 @@
+---
+title: "Helm Deployment"
+description: "Deploy 4G3N7 on Kubernetes using Helm charts"
+---
+
+# Deploy 4G3N7 on Kubernetes with Helm
+
+Helm provides a simple way to deploy 4G3N7 on Kubernetes clusters.
+
+## Prerequisites
+
+- Kubernetes cluster (1.19+)
+- Helm 3.x installed
+- kubectl configured
+- 8GB+ available memory in cluster
+
+## Quick Start
+
+<Steps>
+  <Step title="Clone Repository">
+    ```bash
+    git clone https://github.com/4g3n7-ai/4g3n7.git
+    cd 4g3n7
+    ```
+  </Step>
+  
+  <Step title="Configure API Keys">
+    Create a `values.yaml` file with at least one API key:
+    
+    ```yaml
+    4g3n7-agent:
+      apiKeys:
+        anthropic:
+          value: "sk-ant-your-key-here"
+        # Optional: Add more providers
+        # openai:
+        #   value: "sk-your-key-here"
+        # gemini:
+        #   value: "your-key-here"
+    ```
+  </Step>
+  
+  <Step title="Install 4G3N7">
+    ```bash
+    helm install 4g3n7 ./helm \
+      --namespace 4g3n7 \
+      --create-namespace \
+      -f values.yaml
+    ```
+  </Step>
+  
+  <Step title="Access 4G3N7">
+    ```bash
+    # Port-forward for local access
+    kubectl port-forward -n 4g3n7 svc/4g3n7-ui 9992:9992
+    
+    # Access at http://localhost:9992
+    ```
+  </Step>
+</Steps>
+
+## Basic Configuration
+
+### API Keys
+
+Configure at least one AI provider:
+
+```yaml
+4g3n7-agent:
+  apiKeys:
+    anthropic:
+      value: "sk-ant-your-key-here"
+    openai:
+      value: "sk-your-key-here"
+    gemini:
+      value: "your-key-here"
+```
+
+### Resource Limits (Optional)
+
+Adjust resources based on your needs:
+
+```yaml
+# Desktop container (where automation runs)
+desktop:
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1"
+    limits:
+      memory: "4Gi"
+      cpu: "2"
+
+# Agent (AI orchestration)
+agent:
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+```
+
+### External Access (Optional)
+
+Enable ingress for domain-based access:
+
+```yaml
+ui:
+  ingress:
+    enabled: true
+    hostname: 4g3n7.your-domain.com
+    tls: true
+```
+
+## Accessing 4G3N7
+
+### Local Access (Recommended)
+
+```bash
+kubectl port-forward -n 4g3n7 svc/4g3n7-ui 9992:9992
+```
+
+Access at: http://localhost:9992
+
+### External Access
+
+If you configured ingress:
+- Access at: https://4g3n7.your-domain.com
+
+## Verifying Deployment
+
+Check that all pods are running:
+
+```bash
+kubectl get pods -n 4g3n7
+```
+
+Expected output:
+```
+NAME                              READY   STATUS    RESTARTS   AGE
+4g3n7-agent-xxxxx               1/1     Running   0          2m
+4g3n7-desktop-xxxxx             1/1     Running   0          2m
+4g3n7-postgresql-0              1/1     Running   0          2m
+4g3n7-ui-xxxxx                 1/1     Running   0          2m
+```
+
+## Troubleshooting
+
+### Pods Not Starting
+
+Check pod status:
+```bash
+kubectl describe pod -n 4g3n7 <pod-name>
+```
+
+Common issues:
+- Insufficient memory/CPU: Check node resources with `kubectl top nodes`
+- Missing API keys: Verify your values.yaml configuration
+
+### Connection Issues
+
+Test service connectivity:
+```bash
+kubectl logs -n 4g3n7 deployment/4g3n7-agent
+```
+
+### View Logs
+
+```bash
+# All logs
+kubectl logs -n 4g3n7 -l app=4g3n7 --tail=100
+
+# Specific component
+kubectl logs -n 4g3n7 deployment/4g3n7-agent
+```
+
+## Upgrading
+
+```bash
+# Update your values.yaml as needed, then:
+helm upgrade 4g3n7 ./helm -n 4g3n7 -f values.yaml
+```
+
+## Uninstalling
+
+```bash
+# Remove 4G3N7
+helm uninstall 4g3n7 -n 4g3n7
+
+# Clean up namespace
+kubectl delete namespace 4g3n7
+```
+
+## Advanced Configuration
+
+<AccordionGroup>
+  <Accordion title="Using External Secrets">
+    If using Kubernetes secret management (Vault, Sealed Secrets, etc.):
+    
+    ```yaml
+    4g3n7-agent:
+      apiKeys:
+        anthropic:
+          useExisting: true
+          secretName: "my-api-keys"
+          secretKey: "anthropic-key"
+    ```
+    
+    Create the secret manually:
+    ```bash
+    kubectl create secret generic my-api-keys \
+      --namespace 4g3n7 \
+      --from-literal=anthropic-key="sk-ant-your-key"
+    ```
+  </Accordion>
+  
+  <Accordion title="LiteLLM Proxy Mode">
+    For centralized LLM management, use the included LiteLLM proxy:
+    
+    ```bash
+    helm install 4g3n7 ./helm \
+      -f values-proxy.yaml \
+      --namespace 4g3n7 \
+      --create-namespace \
+      --set 4g3n7-llm-proxy.env.ANTHROPIC_API_KEY="your-key"
+    ```
+    
+    This provides:
+    - Centralized API key management
+    - Request routing and load balancing
+    - Rate limiting and retry logic
+  </Accordion>
+  
+  <Accordion title="Custom Storage">
+    Configure persistent storage:
+    
+    ```yaml
+    desktop:
+      persistence:
+        enabled: true
+        size: "20Gi"
+        storageClass: "fast-ssd"
+    
+    postgresql:
+      persistence:
+        size: "20Gi"
+        storageClass: "fast-ssd"
+    ```
+  </Accordion>
+  
+  <Accordion title="Production Security">
+    ```yaml
+    # Network policies
+    networkPolicy:
+      enabled: true
+    
+    # Pod security
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      fsGroup: 1000
+    
+    # Enable authentication
+    auth:
+      enabled: true
+      type: "basic"
+      username: "admin"
+      password: "changeme"  # Use secrets in production!
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Integrate 4G3N7 with your applications
+  </Card>
+  <Card title="LiteLLM Integration" icon="plug" href="/deployment/litellm">
+    Use any LLM provider with 4G3N7
+  </Card>
+</CardGroup>
+
+<Note>
+  **Need help?** Join our [Discord community](https://discord.com/invite/d9ewZkWPTP) or check our [GitHub discussions](https://github.com/4g3n7-ai/4g3n7/discussions).
+</Note>

@@ -1,0 +1,48 @@
+## docker-compose file that spins up a 4g3n7-desktop container
+## and a postgres container. 4g3n7-ui and 4g3n7-agent are not included
+## in this file, and can be run separately using npm, allowing for
+## easier local development.
+
+name: 4g3n7
+
+services:
+  4g3n7-desktop:
+    # Build from source
+    build:
+      context: ../packages/
+      dockerfile: 4g3n7d/Dockerfile
+    # Use pre-built image
+    image: ghcr.io/4g3n7/4g3n7-desktop:edge
+    shm_size: "2g"
+    container_name: 4g3n7-desktop
+    restart: unless-stopped
+    hostname: computer
+    privileged: true
+    ports:
+      - "9990:9990" # 4g3n7d service & noVNC
+    environment:
+      - DISPLAY=:0
+    networks:
+      - 4g3n7-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: 4g3n7-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=4g3n7db
+    networks:
+      - 4g3n7-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+networks:
+  4g3n7-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

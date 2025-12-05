@@ -1,0 +1,97 @@
+name: 4g3n7
+
+services:
+  4g3n7-desktop:
+    # Build from source
+    build:
+      context: ../packages/
+      dockerfile: 4g3n7d/Dockerfile
+    # Use pre-built image
+    image: ghcr.io/4g3n7/4g3n7-desktop:edge
+    shm_size: "2g"
+    container_name: 4g3n7-desktop
+    restart: unless-stopped
+    hostname: computer
+    privileged: true
+    ports:
+      - "9990:9990" # 4g3n7d service & noVNC
+    environment:
+      - DISPLAY=:0
+    networks:
+      - 4g3n7-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: 4g3n7-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=4g3n7db
+    networks:
+      - 4g3n7-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  4g3n7-agent:
+    build:
+      context: ../packages/
+      dockerfile: 4g3n7-agent/Dockerfile
+    # Use pre-built image
+    image: ghcr.io/4g3n7/4g3n7-agent:edge
+    container_name: 4g3n7-agent
+    restart: unless-stopped
+    ports:
+      - "9991:9991"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/4g3n7db}
+      - G3N7_DESKTOP_BASE_URL=${G3N7_DESKTOP_BASE_URL:-http://4g3n7-desktop:9990}
+      - G3N7_LLM_PROXY_URL=${G3N7_LLM_PROXY_URL:-http://4g3n7-llm-proxy:4000}
+    depends_on:
+      - postgres
+    networks:
+      - 4g3n7-network
+
+  4g3n7-llm-proxy:
+    build:
+      context: ../packages/
+      dockerfile: 4g3n7-llm-proxy/Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    networks:
+      - 4g3n7-network
+
+  4g3n7-ui:
+    build:
+      context: ../packages/
+      dockerfile: 4g3n7-ui/Dockerfile
+      args:
+        - G3N7_AGENT_BASE_URL=${G3N7_AGENT_BASE_URL:-http://4g3n7-agent:9991}
+        - G3N7_DESKTOP_VNC_URL=${G3N7_DESKTOP_VNC_URL:-http://4g3n7-desktop:9990/websockify}
+    # Use pre-built image
+    image: ghcr.io/4g3n7/4g3n7-ui:edge
+    container_name: 4g3n7-ui
+    restart: unless-stopped
+    ports:
+      - "9992:9992"
+    environment:
+      - NODE_ENV=production
+      - G3N7_AGENT_BASE_URL=${G3N7_AGENT_BASE_URL:-http://4g3n7-agent:9991}
+      - G3N7_DESKTOP_VNC_URL=${G3N7_DESKTOP_VNC_URL:-http://4g3n7-desktop:9990/websockify}
+    depends_on:
+      - 4g3n7-agent
+    networks:
+      - 4g3n7-network
+
+networks:
+  4g3n7-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
