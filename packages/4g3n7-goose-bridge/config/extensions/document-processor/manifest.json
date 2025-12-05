@@ -1,0 +1,82 @@
+{
+  "id": "document-processor",
+  "name": "Document Processor",
+  "version": "1.0.0",
+  "description": "Process DOCX, PDF, and XLSX documents",
+  "author": "4G3N7 Team",
+  "homepage": "https://github.com/4g3n7/extensions/document-processor",
+  "capabilities": [
+    {
+      "id": "extract-text",
+      "name": "Text Extraction",
+      "description": "Extract text from documents",
+      "operations": ["extract_text"],
+      "requiredPermissions": ["goose.document.read"],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filePath": {
+            "type": "string",
+            "description": "Path to the document"
+          },
+          "format": {
+            "type": "string",
+            "enum": ["docx", "pdf", "xlsx"],
+            "description": "Document format"
+          }
+        },
+        "required": ["filePath", "format"]
+      }
+    },
+    {
+      "id": "convert-format",
+      "name": "Format Conversion",
+      "description": "Convert between document formats",
+      "operations": ["convert"],
+      "requiredPermissions": ["goose.document.read", "goose.document.write"],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "inputPath": {
+            "type": "string",
+            "description": "Input file path"
+          },
+          "outputPath": {
+            "type": "string",
+            "description": "Output file path"
+          },
+          "targetFormat": {
+            "type": "string",
+            "enum": ["docx", "pdf", "txt", "html"],
+            "description": "Target format"
+          }
+        },
+        "required": ["inputPath", "outputPath", "targetFormat"]
+      }
+    }
+  ],
+  "permissions": ["goose.document.read", "goose.document.write"],
+  "dependencies": {
+    "mammoth": "^1.6.0",
+    "pdf-parse": "^1.1.1",
+    "xlsx": "^0.18.5"
+  },
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "maxFileSize": {
+        "type": "number",
+        "default": 10485760,
+        "description": "Maximum file size in bytes"
+      },
+      "supportedFormats": {
+        "type": "array",
+        "items": { "type": "string" },
+        "default": ["docx", "pdf", "xlsx"],
+        "description": "Supported document formats"
+      }
+    }
+  },
+  "entryPoint": "./index.js",
+  "minBridgeVersion": "0.1.0"
+}

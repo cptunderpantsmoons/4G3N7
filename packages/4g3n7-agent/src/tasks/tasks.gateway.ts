@@ -7,6 +7,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Injectable } from '@nestjs/common';
+import { LoggerService } from '../logging/logger.service';
 
 @Injectable()
 @WebSocketGateway({
@@ -19,24 +20,44 @@ export class TasksGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
+  constructor(private readonly logger: LoggerService) {}
+
   handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+    this.logger.logWebSocketEvent('client_connected', client.id, {
+      component: 'TasksGateway',
+      method: 'handleConnection',
+      metadata: { clientHandshake: client.handshake },
+    });
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+    this.logger.logWebSocketEvent('client_disconnected', client.id, {
+      component: 'TasksGateway',
+      method: 'handleDisconnect',
+      metadata: { reason: client.disconnectedReason },
+    });
   }
 
   @SubscribeMessage('join_task')
   handleJoinTask(client: Socket, taskId: string) {
     client.join(`task_${taskId}`);
-    console.log(`Client ${client.id} joined task ${taskId}`);
+    this.logger.logWebSocketEvent('join_task', client.id, {
+      component: 'TasksGateway',
+      method: 'handleJoinTask',
+      taskId,
+      metadata: { room: `task_${taskId}` },
+    });
   }
 
   @SubscribeMessage('leave_task')
   handleLeaveTask(client: Socket, taskId: string) {
     client.leave(`task_${taskId}`);
-    console.log(`Client ${client.id} left task ${taskId}`);
+    this.logger.logWebSocketEvent('leave_task', client.id, {
+      component: 'TasksGateway',
+      method: 'handleLeaveTask',
+      taskId,
+      metadata: { room: `task_${taskId}` },
+    });
   }
 
   emitTaskUpdate(taskId: string, task: any) {

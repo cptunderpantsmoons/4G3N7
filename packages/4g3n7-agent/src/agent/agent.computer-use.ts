@@ -22,13 +22,21 @@ import {
   isReadFileToolUseBlock,
 } from '@4g3n7/shared';
 import { Logger } from '@nestjs/common';
+import { LoggerService } from '../logging/logger.service';
 
 const G3N7_DESKTOP_BASE_URL = process.env.G3N7_DESKTOP_BASE_URL as string;
+
+// Initialize a logger instance for computer operations
+let computerLogger: LoggerService;
 
 export async function handleComputerToolUse(
   block: ComputerToolUseContentBlock,
   logger: Logger,
 ): Promise<ToolResultContentBlock> {
+  // Initialize the structured logger if not already done
+  if (!computerLogger) {
+    computerLogger = new LoggerService(null as any, null as any);
+  }
   logger.debug(
     `Handling computer tool use: ${block.name}, tool_use_id: ${block.id}`,
   );
@@ -240,7 +248,7 @@ export async function handleComputerToolUse(
 
 async function moveMouse(input: { coordinates: Coordinates }): Promise<void> {
   const { coordinates } = input;
-  console.log(
+  computerLogger.info(
     `Moving mouse to coordinates: [${coordinates.x}, ${coordinates.y}]`,
   );
 
@@ -254,7 +262,7 @@ async function moveMouse(input: { coordinates: Coordinates }): Promise<void> {
       }),
     });
   } catch (error) {
-    console.error('Error in move_mouse action:', error);
+    computerLogger.error('Error in move_mouse action:', error);
     throw error;
   }
 }
@@ -264,7 +272,7 @@ async function traceMouse(input: {
   holdKeys?: string[];
 }): Promise<void> {
   const { path, holdKeys } = input;
-  console.log(
+  computerLogger.info(
     `Tracing mouse to path: ${path} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
   );
 
@@ -279,7 +287,7 @@ async function traceMouse(input: {
       }),
     });
   } catch (error) {
-    console.error('Error in trace_mouse action:', error);
+    computerLogger.error('Error in trace_mouse action:', error);
     throw error;
   }
 }
@@ -291,7 +299,7 @@ async function clickMouse(input: {
   clickCount: number;
 }): Promise<void> {
   const { coordinates, button, holdKeys, clickCount } = input;
-  console.log(
+  computerLogger.info(
     `Clicking mouse ${button} ${clickCount} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}] ` : ''} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
   );
 
@@ -308,7 +316,7 @@ async function clickMouse(input: {
       }),
     });
   } catch (error) {
-    console.error('Error in click_mouse action:', error);
+    computerLogger.error('Error in click_mouse action:', error);
     throw error;
   }
 }
@@ -319,7 +327,7 @@ async function pressMouse(input: {
   press: Press;
 }): Promise<void> {
   const { coordinates, button, press } = input;
-  console.log(
+  computerLogger.info(
     `Pressing mouse ${button} ${press} ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}]` : ''}`,
   );
 
@@ -335,7 +343,7 @@ async function pressMouse(input: {
       }),
     });
   } catch (error) {
-    console.error('Error in press_mouse action:', error);
+    computerLogger.error('Error in press_mouse action:', error);
     throw error;
   }
 }
@@ -346,7 +354,7 @@ async function dragMouse(input: {
   holdKeys?: string[];
 }): Promise<void> {
   const { path, button, holdKeys } = input;
-  console.log(
+  computerLogger.info(
     `Dragging mouse to path: ${path} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
   );
 
@@ -362,7 +370,7 @@ async function dragMouse(input: {
       }),
     });
   } catch (error) {
-    console.error('Error in drag_mouse action:', error);
+    computerLogger.error('Error in drag_mouse action:', error);
     throw error;
   }
 }
@@ -374,7 +382,7 @@ async function scroll(input: {
   holdKeys?: string[];
 }): Promise<void> {
   const { coordinates, direction, scrollCount, holdKeys } = input;
-  console.log(
+  computerLogger.info(
     `Scrolling ${direction} ${scrollCount} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}]` : ''}`,
   );
 
@@ -391,7 +399,7 @@ async function scroll(input: {
       }),
     });
   } catch (error) {
-    console.error('Error in scroll action:', error);
+    computerLogger.error('Error in scroll action:', error);
     throw error;
   }
 }
@@ -401,7 +409,7 @@ async function typeKeys(input: {
   delay?: number;
 }): Promise<void> {
   const { keys, delay } = input;
-  console.log(`Typing keys: ${keys}`);
+  computerLogger.info(`Typing keys: ${keys}`);
 
   try {
     await fetch(`${G3N7_DESKTOP_BASE_URL}/computer-use`, {
@@ -414,7 +422,7 @@ async function typeKeys(input: {
       }),
     });
   } catch (error) {
-    console.error('Error in type_keys action:', error);
+    computerLogger.error('Error in type_keys action:', error);
     throw error;
   }
 }
@@ -424,7 +432,7 @@ async function pressKeys(input: {
   press: Press;
 }): Promise<void> {
   const { keys, press } = input;
-  console.log(`Pressing keys: ${keys}`);
+  computerLogger.info(`Pressing keys: ${keys}`);
 
   try {
     await fetch(`${G3N7_DESKTOP_BASE_URL}/computer-use`, {
@@ -437,7 +445,7 @@ async function pressKeys(input: {
       }),
     });
   } catch (error) {
-    console.error('Error in press_keys action:', error);
+    computerLogger.error('Error in press_keys action:', error);
     throw error;
   }
 }
@@ -447,7 +455,7 @@ async function typeText(input: {
   delay?: number;
 }): Promise<void> {
   const { text, delay } = input;
-  console.log(`Typing text: ${text}`);
+  computerLogger.info(`Typing text: ${text}`);
 
   try {
     await fetch(`${G3N7_DESKTOP_BASE_URL}/computer-use`, {
@@ -460,14 +468,14 @@ async function typeText(input: {
       }),
     });
   } catch (error) {
-    console.error('Error in type_text action:', error);
+    computerLogger.error('Error in type_text action:', error);
     throw error;
   }
 }
 
 async function pasteText(input: { text: string }): Promise<void> {
   const { text } = input;
-  console.log(`Pasting text: ${text}`);
+  computerLogger.info(`Pasting text: ${text}`);
 
   try {
     await fetch(`${G3N7_DESKTOP_BASE_URL}/computer-use`, {
@@ -479,14 +487,14 @@ async function pasteText(input: { text: string }): Promise<void> {
       }),
     });
   } catch (error) {
-    console.error('Error in paste_text action:', error);
+    computerLogger.error('Error in paste_text action:', error);
     throw error;
   }
 }
 
 async function wait(input: { duration: number }): Promise<void> {
   const { duration } = input;
-  console.log(`Waiting for ${duration}ms`);
+  computerLogger.info(`Waiting for ${duration}ms`);
 
   try {
     await fetch(`${G3N7_DESKTOP_BASE_URL}/computer-use`, {
@@ -498,13 +506,13 @@ async function wait(input: { duration: number }): Promise<void> {
       }),
     });
   } catch (error) {
-    console.error('Error in wait action:', error);
+    computerLogger.error('Error in wait action:', error);
     throw error;
   }
 }
 
 async function cursorPosition(): Promise<Coordinates> {
-  console.log('Getting cursor position');
+  computerLogger.info('Getting cursor position');
 
   try {
     const response = await fetch(`${G3N7_DESKTOP_BASE_URL}/computer-use`, {
@@ -518,13 +526,13 @@ async function cursorPosition(): Promise<Coordinates> {
     const data = await response.json();
     return { x: data.x, y: data.y };
   } catch (error) {
-    console.error('Error in cursor_position action:', error);
+    computerLogger.error('Error in cursor_position action:', error);
     throw error;
   }
 }
 
 async function screenshot(): Promise<string> {
-  console.log('Taking screenshot');
+  computerLogger.info('Taking screenshot');
 
   try {
     const requestBody = {
@@ -549,14 +557,14 @@ async function screenshot(): Promise<string> {
 
     return data.image; // Base64 encoded image
   } catch (error) {
-    console.error('Error in screenshot action:', error);
+    computerLogger.error('Error in screenshot action:', error);
     throw error;
   }
 }
 
 async function application(input: { application: string }): Promise<void> {
   const { application } = input;
-  console.log(`Opening application: ${application}`);
+  computerLogger.info(`Opening application: ${application}`);
 
   try {
     await fetch(`${G3N7_DESKTOP_BASE_URL}/computer-use`, {
@@ -568,7 +576,7 @@ async function application(input: { application: string }): Promise<void> {
       }),
     });
   } catch (error) {
-    console.error('Error in application action:', error);
+    computerLogger.error('Error in application action:', error);
     throw error;
   }
 }
@@ -582,7 +590,7 @@ async function readFile(input: { path: string }): Promise<{
   message?: string;
 }> {
   const { path } = input;
-  console.log(`Reading file: ${path}`);
+  computerLogger.info(`Reading file: ${path}`);
 
   try {
     const response = await fetch(`${G3N7_DESKTOP_BASE_URL}/computer-use`, {
@@ -601,7 +609,7 @@ async function readFile(input: { path: string }): Promise<{
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error in read_file action:', error);
+    computerLogger.error('Error in read_file action:', error);
     return {
       success: false,
       message: `Error reading file: ${error.message}`,
@@ -614,7 +622,7 @@ export async function writeFile(input: {
   content: string;
 }): Promise<{ success: boolean; message?: string }> {
   const { path, content } = input;
-  console.log(`Writing file: ${path}`);
+  computerLogger.info(`Writing file: ${path}`);
 
   try {
     // Content is always base64 encoded
@@ -637,7 +645,7 @@ export async function writeFile(input: {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error in write_file action:', error);
+    computerLogger.error('Error in write_file action:', error);
     return {
       success: false,
       message: `Error writing file: ${error.message}`,

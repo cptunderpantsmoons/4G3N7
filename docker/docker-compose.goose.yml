@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # Goose Bridge Service
+  goose-bridge:
+    build:
+      context: ./packages/4g3n7-goose-bridge
+      dockerfile: Dockerfile
+    container_name: 4g3n7-goose-bridge
+    ports:
+      - "9992:9992"
+    environment:
+      - NODE_ENV=production
+      - PORT=9992
+      - GOOSE_EXTENSION_PATH=/app/extensions
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - LOG_LEVEL=info
+    volumes:
+      - ./extensions:/app/extensions:ro
+      - goose-data:/app/data
+    depends_on:
+      - redis
+    networks:
+      - 4g3n7-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:9992/api/v1/goose/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis for task queue and caching
+  redis:
+    image: redis:7-alpine
+    container_name: 4g3n7-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - 4g3n7-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  goose-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  4g3n7-network:
+    driver: bridge

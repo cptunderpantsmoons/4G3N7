@@ -4,6 +4,8 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { webcrypto } from 'crypto';
 import { json, urlencoded } from 'express';
 import * as compression from 'compression';
+import { LoggerService } from './logging/logger.service';
+import { LoggingMiddlewareFactory } from './logging/logging.middleware';
 
 // Polyfill for crypto global (required by @nestjs/schedule)
 if (!globalThis.crypto) {
@@ -16,6 +18,12 @@ async function bootstrap() {
 
   try {
     const app = await NestFactory.create(AppModule);
+
+    // Get LoggerService from the app context (it's provided by LoggingModule)
+    const loggerService = app.get(LoggerService);
+
+    // Add logging middleware for HTTP requests
+    app.use(LoggingMiddlewareFactory(loggerService));
 
     // Configure body parser with reasonable payload size limits (reduced from 50MB)
     app.use(json({
@@ -51,9 +59,20 @@ async function bootstrap() {
     }));
 
     // Enable CORS with restricted origins for security
-    const corsOrigin = process.env.CORS_ORIGIN || '*';
+    const corsOrigin = process.env.CORS_ORIGIN;
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    if (isProduction && !corsOrigin) {
+      throw new Error('CORS_ORIGIN environment variable is required in production');
+    }
+    
+    // Default to localhost for development, require explicit config for production
+    const allowedOrigins = corsOrigin 
+      ? corsOrigin.split(',').map(origin => origin.trim())
+      : ['http://localhost:9992', 'http://localhost:3000']; // Default UI ports
+    
     app.enableCors({
-      origin: corsOrigin.split(',').map(origin => origin.trim()),
+      origin: allowedOrigins,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
       credentials: true,
       maxAge: 86400, // 24 hours

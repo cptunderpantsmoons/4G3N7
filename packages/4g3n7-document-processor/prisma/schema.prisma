@@ -1,0 +1,285 @@
+// Prisma schema for document processing service
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  VALIDATED
+}
+
+enum DocumentType {
+  DOCX
+  PDF
+  XLSX
+  CSV
+  TXT
+  IMAGE
+  HTML
+  OTHER
+}
+
+enum ProcessingStage {
+  UPLOAD
+  VALIDATION
+  EXTRACTION
+  CONVERSION
+  OCR
+  ANALYSIS
+  INDEXING
+  COMPLETED
+}
+
+model Document {
+  id                  String            @id @default(uuid())
+  name                String
+  originalName        String
+  type                DocumentType
+  mimeType            String
+  size                Int
+  
+  // Storage
+  objectStorageKey    String?
+  localPath           String?
+  
+  // Processing
+  status              DocumentStatus    @default(PENDING)
+  stage               ProcessingStage   @default(UPLOAD)
+  processingStartedAt DateTime?
+  processingEndedAt   DateTime?
+  error               String?
+  
+  // Metadata
+  metadata            Json?             // Extracted metadata
+  author              String?
+  title               String?
+  subject             String?
+  keywords            String[]
+  language            String?
+  pageCount           Int?
+  wordCount           Int?
+  
+  // Content
+  extractedText       String?           @db.Text
+  extractedData       Json?             // Structured data from forms/spreadsheets
+  summary             String?           @db.Text
+  
+  // Analysis
+  sentiment           Json?             // Sentiment analysis results
+  classification      String[]
+  tags                String[]
+  entities            Json?             // Named entity recognition
+  
+  // Security
+  hasRedactions       Boolean           @default(false)
+  isEncrypted         Boolean           @default(false)
+  accessLevel         String            @default("private")
+  
+  // Relations
+  versions            DocumentVersion[]
+  conversions         DocumentConversion[]
+  workflows           DocumentWorkflow[]
+  comparisons         DocumentComparison[] @relation("SourceDocument")
+  comparedWith        DocumentComparison[] @relation("TargetDocument")
+  
+  // Timestamps
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  
+  // Indexes
+  @@index([status, createdAt])
+  @@index([type, status])
+  @@index([stage])
+  @@index([language])
+  @@index([classification])
+  @@index([tags])
+  @@index([createdAt])
+}
+
+model DocumentVersion {
+  id                  String            @id @default(uuid())
+  document            Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId          String
+  
+  versionNumber       Int
+  objectStorageKey    String
+  size                Int
+  checksum            String
+  comment             String?
+  
+  createdAt           DateTime          @default(now())
+  
+  @@index([documentId, versionNumber])
+  @@unique([documentId, versionNumber])
+}
+
+model DocumentConversion {
+  id                  String            @id @default(uuid())
+  sourceDocument      Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId          String
+  
+  targetFormat        String
+  targetMimeType      String
+  objectStorageKey    String
+  size                Int
+  status              DocumentStatus    @default(PENDING)
+  error               String?
+  
+  createdAt           DateTime          @default(now())
+  completedAt         DateTime?
+  
+  @@index([documentId])
+  @@index([targetFormat, status])
+}
+
+model DocumentWorkflow {
+  id                  String                @id @default(uuid())
+  name                String
+  description         String?
+  
+  // Bull job reference
+  jobId               String?               @unique
+  
+  status              DocumentStatus        @default(PENDING)
+  progress            Int                   @default(0)
+  
+  // Configuration
+  config              Json                  // Workflow configuration
+  
+  // Documents
+  documents           Document[]
+  steps               DocumentWorkflowStep[]
+  
+  // Results
+  results             Json?
+  error               String?
+  
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  startedAt           DateTime?
+  completedAt         DateTime?
+  
+  @@index([status, createdAt])
+  @@index([jobId])
+}
+
+model DocumentWorkflowStep {
+  id                  String            @id @default(uuid())
+  workflow            DocumentWorkflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflowId          String
+  
+  stepNumber          Int
+  name                String
+  type                String            // extract, convert, analyze, validate, etc.
+  config              Json
+  
+  status              DocumentStatus    @default(PENDING)
+  result              Json?
+  error               String?
+  
+  startedAt           DateTime?
+  completedAt         DateTime?
+  
+  @@index([workflowId, stepNumber])
+  @@unique([workflowId, stepNumber])
+}
+
+model DocumentComparison {
+  id                  String            @id @default(uuid())
+  
+  sourceDocument      Document          @relation("SourceDocument", fields: [sourceDocumentId], references: [id], onDelete: Cascade)
+  sourceDocumentId    String
+  
+  targetDocument      Document          @relation("TargetDocument", fields: [targetDocumentId], references: [id], onDelete: Cascade)
+  targetDocumentId    String
+  
+  // Comparison results
+  similarity          Float?            // 0-1 similarity score
+  differences         Json?             // Detailed diff data
+  status              DocumentStatus    @default(PENDING)
+  
+  createdAt           DateTime          @default(now())
+  completedAt         DateTime?
+  
+  @@index([sourceDocumentId])
+  @@index([targetDocumentId])
+  @@unique([sourceDocumentId, targetDocumentId])
+}
+
+model DocumentTemplate {
+  id                  String            @id @default(uuid())
+  name                String
+  description         String?
+  category            String
+  
+  // Template content
+  content             Json              // Template structure/content
+  variables           Json              // Template variables
+  
+  // Type
+  documentType        DocumentType
+  outputFormat        String
+  
+  isActive            Boolean           @default(true)
+  
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  
+  @@index([category, isActive])
+  @@index([documentType])
+}
+
+model DocumentIndex {
+  id                  String            @id @default(uuid())
+  documentId          String
+  
+  // Searchable content
+  content             String            @db.Text
+  contentVector       Unsupported("vector(1536)")?  // For vector search (if using pgvector)
+  
+  // Metadata for searching
+  metadata            Json
+  
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  
+  @@index([documentId])
+  @@index([content(ops: raw("gin_trgm_ops"))], type: Gin)
+}
+
+model ProcessingJob {
+  id                  String            @id @default(uuid())
+  
+  // Bull job reference
+  jobId               String            @unique
+  queueName           String
+  
+  // Job details
+  type                String            // upload, process, convert, etc.
+  data                Json              // Job data
+  
+  status              String            @default("waiting")
+  progress            Int               @default(0)
+  result              Json?
+  error               String?
+  
+  attempts            Int               @default(0)
+  maxAttempts         Int               @default(3)
+  
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  startedAt           DateTime?
+  completedAt         DateTime?
+  
+  @@index([status, createdAt])
+  @@index([jobId])
+  @@index([queueName, status])
+}

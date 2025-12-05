@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint-and-test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        package:
+          - 4g3n7-agent
+          - 4g3n7-goose-bridge
+          - 4g3n7-document-processor
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: 4G3N7-main/packages/${{ matrix.package }}
+        run: npm ci
+
+      - name: Build shared package
+        working-directory: 4G3N7-main/packages/shared
+        run: npm ci && npm run build
+
+      - name: Run linter
+        working-directory: 4G3N7-main/packages/${{ matrix.package }}
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Run tests
+        working-directory: 4G3N7-main/packages/${{ matrix.package }}
+        run: npm test -- --coverage --maxWorkers=2
+        continue-on-error: true
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: 4G3N7-main/packages/${{ matrix.package }}/coverage/coverage-final.json
+          flags: ${{ matrix.package }}
+          name: ${{ matrix.package }}-coverage
+        continue-on-error: true
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+
+    strategy:
+      matrix:
+        package:
+          - 4g3n7-agent
+          - 4g3n7-goose-bridge
+          - 4g3n7-document-processor
+          - 4g3n7-ui
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: 4G3N7-main/packages/shared
+        run: npm ci
+
+      - name: Build shared package
+        working-directory: 4G3N7-main/packages/shared
+        run: npm run build
+
+      - name: Install dependencies
+        working-directory: 4G3N7-main/packages/${{ matrix.package }}
+        run: npm ci
+
+      - name: Build package
+        working-directory: 4G3N7-main/packages/${{ matrix.package }}
+        run: npm run build
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run npm audit
+        run: |
+          cd 4G3N7-main/packages/4g3n7-agent && npm audit --audit-level=moderate || true
+          cd ../4g3n7-goose-bridge && npm audit --audit-level=moderate || true
+          cd ../4g3n7-document-processor && npm audit --audit-level=moderate || true
+

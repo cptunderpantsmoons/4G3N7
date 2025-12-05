@@ -1,0 +1,57 @@
+{
+  "id": "echo-extension",
+  "name": "Echo Extension",
+  "version": "1.0.0",
+  "description": "Simple echo extension for testing and demonstration",
+  "author": "4G3N7 Team",
+  "homepage": "https://github.com/4g3n7/goose-bridge",
+  "capabilities": [
+    {
+      "id": "echo",
+      "name": "Echo",
+      "description": "Returns the input data unchanged",
+      "operations": ["echo", "ping"],
+      "requiredPermissions": [],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Message to echo back"
+          },
+          "delay": {
+            "type": "number",
+            "description": "Optional delay in milliseconds",
+            "default": 0
+          }
+        },
+        "required": ["message"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ],
+  "permissions": [],
+  "dependencies": {},
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "maxMessageLength": {
+        "type": "number",
+        "default": 1000,
+        "description": "Maximum message length"
+      }
+    }
+  },
+  "entryPoint": "./index.ts",
+  "minBridgeVersion": "0.1.0"
+}

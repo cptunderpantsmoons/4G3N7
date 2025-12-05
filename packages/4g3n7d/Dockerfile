@@ -1,5 +1,6 @@
 # -----------------------------------------------------------------------------
 # 4G3N7 Dockerfile - Virtual Desktop Environment
+# Optimized for production deployment on Railway
 # -----------------------------------------------------------------------------
 
 # Base image
@@ -14,27 +15,41 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV DISPLAY=:0
 
 # -----------------------------------------------------------------------------
-# 2. System dependencies installation
+# 2. System dependencies installation - optimized layer caching
 # -----------------------------------------------------------------------------
-RUN apt-get update && apt-get install -y \
-    # X11 / VNC
-    xvfb x11vnc xauth x11-xserver-utils \
-    x11-apps sudo software-properties-common \
-    # Desktop environment 
-    xfce4 xfce4-goodies dbus wmctrl \
-    # Display manager with autologin capability
-    lightdm \
-    # Development tools
-    python3 python3-pip curl wget git vim \
-    # Utilities
-    supervisor netcat-openbsd \
-    # Applications
-    xpdf gedit xpaint \
-    # Libraries
-    libxtst-dev \
-    # Remove unneeded dependencies
+# Install core system packages first (changes less frequently)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Core utilities
+    sudo software-properties-common curl wget git vim \
+    python3 python3-pip supervisor netcat-openbsd \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install X11/VNC packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xvfb x11vnc xauth x11-xserver-utils x11-apps \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install desktop environment
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xfce4 xfce4-goodies dbus wmctrl lightdm \
     && apt-get remove -y light-locker xfce4-screensaver xfce4-power-manager || true \
-    # Clean up to reduce image size
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install development libraries (for Node.js modules)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cmake libx11-dev libxtst-dev libxinerama-dev \
+    libxi-dev libxt-dev libxrandr-dev libxkbcommon-dev \
+    libxkbcommon-x11-dev libgl1-mesa-dri libgl1-mesa-glx \
+    mesa-utils libcap2-bin libgtk-3-0 libnotify4 \
+    libnss3 libxss1 libxtst6 xdg-utils libatspi2.0-0 \
+    libdrm2 libgbm1 libxcb-dri3-0 libxkbcommon0 \
+    libsecret-1-0 xclip build-essential \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install fonts and applications
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    fontconfig fonts-dejavu fonts-liberation fonts-freefont-ttf \
+    xpdf gedit xpaint \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /run/dbus && \
@@ -175,8 +190,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY ./shared/ /bytebot/shared/
-COPY ./bytebotd/ /bytebot/bytebotd/
-WORKDIR /bytebot/bytebotd
+COPY ./4g3n7d/ /bytebot/4g3n7d/
+WORKDIR /bytebot/4g3n7d
 RUN npm install --build-from-source
 RUN npm rebuild uiohook-napi --build-from-source
 
@@ -189,13 +204,13 @@ RUN git clone https://github.com/ZachJW34/libnut-core.git && \
     npm install && \
     npm run build:release
 
-# replace /bytebotd/node_modules/@nut-tree-fork/libnut-linux/build/Release/libnut.node with /compile/libnut-core/build/Release/libnut.node
-RUN rm -f /bytebot/bytebotd/node_modules/@nut-tree-fork/libnut-linux/build/Release/libnut.node && \
-    cp /compile/libnut-core/build/Release/libnut.node /bytebot/bytebotd/node_modules/@nut-tree-fork/libnut-linux/build/Release/libnut.node
+# replace /4g3n7d/node_modules/@nut-tree-fork/libnut-linux/build/Release/libnut.node with /compile/libnut-core/build/Release/libnut.node
+RUN rm -f /bytebot/4g3n7d/node_modules/@nut-tree-fork/libnut-linux/build/Release/libnut.node && \
+    cp /compile/libnut-core/build/Release/libnut.node /bytebot/4g3n7d/node_modules/@nut-tree-fork/libnut-linux/build/Release/libnut.node
 
 RUN rm -rf /compile
 
-WORKDIR /bytebot/bytebotd
+WORKDIR /bytebot/4g3n7d
 
 # -----------------------------------------------------------------------------
 # 7. User setup and autologin configuration
@@ -213,15 +228,15 @@ RUN mkdir -p /tmp/4g3n7-screenshots && \
 # -----------------------------------------------------------------------------
 #  Copy staged system files and keep sane permissions
 # -----------------------------------------------------------------------------
-# 1. Ensure everything under /bytebotd/root is owned by root (files + dirs)
+# 1. Ensure everything under /4g3n7d/root is owned by root (files + dirs)
 # 2. Set *files* to 0644 and *directories* to 0755 so that applications can
 #    traverse directories (execute bit!) while keeping the contents read-only.
 # 3. Copy the tree to /
-RUN chown -R root:root /bytebot/bytebotd/root && \
-    find /bytebot/bytebotd/root -type f -exec chmod 644 {} + && \
-    find /bytebot/bytebotd/root -type d -exec chmod 755 {} + && \
-    find /bytebot/bytebotd/root -type f -executable -exec chmod +x {} + && \
-    cp -a /bytebot/bytebotd/root/. /
+RUN chown -R root:root /bytebot/4g3n7d/root && \
+    find /bytebot/4g3n7d/root -type f -exec chmod 644 {} + && \
+    find /bytebot/4g3n7d/root -type d -exec chmod 755 {} + && \
+    find /bytebot/4g3n7d/root -type f -executable -exec chmod +x {} + && \
+    cp -a /bytebot/4g3n7d/root/. /
 
 RUN chown -R user:user /home/user
 RUN chmod -R 755 /home/user
@@ -245,6 +260,10 @@ WORKDIR /home/user
 # -----------------------------------------------------------------------------
 # - Port 9990: 4g3n7d and external noVNC websocket
 EXPOSE 9990
+
+# Health check - verify VNC and desktop services are running
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD pgrep -f "x11vnc" > /dev/null && pgrep -f "Xvfb" > /dev/null && curl -f http://localhost:9990/health || exit 1
 
 # Start supervisor to manage all services
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf", "-n"]

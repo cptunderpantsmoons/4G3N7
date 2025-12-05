@@ -1,0 +1,120 @@
+# Railway-compatible Docker Compose Configuration
+# Use this for local testing before Railway deployment
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database (Railway will provide this in production)
+  postgres:
+    image: postgres:16-alpine
+    container_name: 4g3n7-postgres-railway
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-4g3n7db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - 4g3n7-network
+    restart: unless-stopped
+
+  # 4G3N7 Agent Service
+  4g3n7-agent:
+    build:
+      context: .
+      dockerfile: ./packages/4g3n7-agent/Dockerfile
+    container_name: 4g3n7-agent-railway
+    ports:
+      - "9991:9991"
+    environment:
+      # Railway will auto-configure DATABASE_URL
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/4g3n7db}
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: "9991"
+
+      # AI Provider Keys (set these in Railway dashboard)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+
+      # Desktop connection
+      G3N7_DESKTOP_BASE_URL: ${G3N7_DESKTOP_BASE_URL:-http://4g3n7-desktop:9990}
+
+      # Optional Configuration
+      OPENROUTER_API_BASE: ${OPENROUTER_API_BASE:-https://openrouter.ai/api/v1}
+      OPENROUTER_SITE_URL: ${OPENROUTER_SITE_URL:-}
+      OPENROUTER_APP_NAME: ${OPENROUTER_APP_NAME:-4G3N7}
+
+      # File Storage Configuration
+      FILE_STORAGE_PROVIDER: ${FILE_STORAGE_PROVIDER:-local}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      FILE_STORAGE_BUCKET: ${FILE_STORAGE_BUCKET:-4g3n7-files}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-}
+
+      # Migration Settings
+      MIGRATION_BATCH_SIZE: ${MIGRATION_BATCH_SIZE:-50}
+      MIGRATION_MAX_RETRIES: ${MIGRATION_MAX_RETRIES:-3}
+      CLEAR_BASE64_AFTER_MIGRATION: ${CLEAR_BASE64_AFTER_MIGRATION:-false}
+
+      # Database Replication (for production scaling)
+      DATABASE_MAX_CONNECTIONS: ${DATABASE_MAX_CONNECTIONS:-20}
+      DATABASE_HEALTH_CHECK_INTERVAL: ${DATABASE_HEALTH_CHECK_INTERVAL:-30000}
+      DATABASE_FAILOVER_TIMEOUT: ${DATABASE_FAILOVER_TIMEOUT:-5000}
+      DATABASE_REPLICA_URLS: ${DATABASE_REPLICA_URLS:-}
+    depends_on:
+      - postgres
+    networks:
+      - 4g3n7-network
+    restart: unless-stopped
+
+  # 4G3N7 Desktop Service
+  4g3n7-desktop:
+    build:
+      context: .
+      dockerfile: ./packages/4g3n7d/Dockerfile
+    container_name: 4g3n7-desktop-railway
+    ports:
+      - "9990:9990"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: "9990"
+    privileged: true
+    shm_size: "2g"
+    networks:
+      - 4g3n7-network
+    restart: unless-stopped
+
+  # 4G3N7 UI Service (this will be the main public entry point)
+  4g3n7-ui:
+    build:
+      context: .
+      dockerfile: ./packages/4g3n7-ui/Dockerfile
+      args:
+        - G3N7_AGENT_BASE_URL=${G3N7_AGENT_BASE_URL:-http://4g3n7-agent:9991}
+        - G3N7_DESKTOP_VNC_URL=${G3N7_DESKTOP_VNC_URL:-http://4g3n7-desktop:9990/websockify}
+    container_name: 4g3n7-ui-railway
+    ports:
+      - "9992:9992"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: "9992"
+      G3N7_AGENT_BASE_URL: ${G3N7_AGENT_BASE_URL:-http://4g3n7-agent:9991}
+      G3N7_DESKTOP_VNC_URL: ${G3N7_DESKTOP_VNC_URL:-http://4g3n7-desktop:9990/websockify}
+    depends_on:
+      - 4g3n7-agent
+      - 4g3n7-desktop
+    networks:
+      - 4g3n7-network
+    restart: unless-stopped
+
+networks:
+  4g3n7-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

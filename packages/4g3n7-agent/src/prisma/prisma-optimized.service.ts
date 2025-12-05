@@ -1,8 +1,11 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { LoggerService } from '../logging/logger.service';
 
 @Injectable()
 export class PrismaOptimizedService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+  private logger: LoggerService;
+
   constructor() {
     super({
       log: ['warn', 'error'],
@@ -13,6 +16,9 @@ export class PrismaOptimizedService extends PrismaClient implements OnModuleInit
         },
       },
     });
+
+    // Initialize logger for database operations
+    this.logger = new LoggerService(null as any, null as any);
   }
 
   async onModuleInit() {
@@ -20,13 +26,36 @@ export class PrismaOptimizedService extends PrismaClient implements OnModuleInit
 
     // Optimize connection pool
     this.$on('beforeExit', async () => {
-      console.log('Prisma client is disconnecting...');
+      this.logger.info('Prisma client is disconnecting...', {
+        component: 'PrismaOptimizedService',
+        tags: ['database', 'lifecycle'],
+      });
     });
 
     // Monitor slow queries
     this.$on('query', (e) => {
       if (e.duration > 1000) { // Log queries taking longer than 1 second
-        console.warn(`Slow Query: ${e.query} took ${e.duration}ms`);
+        this.logger.warn(`Slow Query detected`, {
+          component: 'PrismaOptimizedService',
+          duration: e.duration,
+          metadata: {
+            query: e.query.substring(0, 200), // Limit query length in logs
+            duration: e.duration,
+            target: e.target,
+          },
+          tags: ['database', 'slow-query', 'performance'],
+        });
+      } else {
+        this.logger.debug(`Database query executed`, {
+          component: 'PrismaOptimizedService',
+          duration: e.duration,
+          metadata: {
+            query: e.query.substring(0, 100), // Limit query length in debug logs
+            duration: e.duration,
+            target: e.target,
+          },
+          tags: ['database', 'query'],
+        });
       }
     });
   }
@@ -132,7 +161,7 @@ export class PrismaOptimizedService extends PrismaClient implements OnModuleInit
         databaseStats: dbStats[0],
       };
     } catch (error) {
-      console.error('Database health check failed:', error);
+      this.logger.error('Database health check failed:', error);
       return {
         status: 'unhealthy',
         connectionPool: null,
@@ -174,7 +203,7 @@ export class PrismaOptimizedService extends PrismaClient implements OnModuleInit
 
       return stats;
     } catch (error) {
-      console.warn('Query stats not available (pg_stat_statements extension may need to be enabled)');
+      this.logger.warn('Query stats not available (pg_stat_statements extension may need to be enabled)');
       return [];
     }
   }

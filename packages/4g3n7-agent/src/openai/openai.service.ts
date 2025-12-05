@@ -20,13 +20,19 @@ import {
   BytebotAgentInterrupt,
   BytebotAgentResponse,
 } from '../agent/agent.types';
+import { LoggerService } from '../logging/logger.service';
 
 @Injectable()
 export class OpenAIService implements BytebotAgentService {
   private readonly openai: OpenAI;
   private readonly logger = new Logger(OpenAIService.name);
+  private readonly structuredLogger: LoggerService;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly loggerService: LoggerService,
+  ) {
+    this.structuredLogger = loggerService;
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
 
     if (!apiKey) {
@@ -75,13 +81,33 @@ export class OpenAIService implements BytebotAgentService {
         },
       };
     } catch (error: any) {
-      console.log('error', error);
-      console.log('error name', error.name);
+      this.structuredLogger.logError(error, {
+        component: 'OpenAIService',
+        method: 'generateMessage',
+        provider: 'openai',
+        model,
+        metadata: {
+          errorMessage: error.message,
+          errorName: error.name,
+          errorCode: error.code,
+          isReasoning,
+          maxTokens,
+        },
+        tags: ['openai', 'api-error', 'generate-message'],
+      });
 
       if (error instanceof APIUserAbortError) {
         this.logger.log('OpenAI API call aborted');
+        this.structuredLogger.info('OpenAI API call aborted by user', {
+          component: 'OpenAIService',
+          method: 'generateMessage',
+          provider: 'openai',
+          model,
+          tags: ['openai', 'aborted'],
+        });
         throw new BytebotAgentInterrupt();
       }
+
       this.logger.error(
         `Error sending message to OpenAI: ${error.message}`,
         error.stack,

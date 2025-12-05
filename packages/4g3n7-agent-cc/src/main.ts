@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { webcrypto } from 'crypto';
 import { json, urlencoded } from 'express';
 
@@ -9,27 +10,55 @@ if (!globalThis.crypto) {
 }
 
 async function bootstrap() {
-  console.log('Starting bytebot-agent application...');
+  const logger = new Logger('Bootstrap');
+  logger.log('Starting 4g3n7-agent-cc application...');
 
   try {
     const app = await NestFactory.create(AppModule);
 
-    // Configure body parser with increased payload size limit (50MB)
-    app.use(json({ limit: '50mb' }));
-    app.use(urlencoded({ limit: '50mb', extended: true }));
+    // Global validation pipe
+    app.useGlobalPipes(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),
+    );
+
+    // Configure body parser with reasonable payload size limits
+    app.use(json({ limit: '10mb' }));
+    app.use(urlencoded({ limit: '10mb', extended: true }));
 
     // Set global prefix for all routes
     app.setGlobalPrefix('api');
 
-    // Enable CORS
+    // Enable CORS with security defaults
+    const corsOrigin = process.env.CORS_ORIGIN;
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    if (isProduction && !corsOrigin) {
+      throw new Error('CORS_ORIGIN environment variable is required in production');
+    }
+
+    const allowedOrigins = corsOrigin
+      ? corsOrigin.split(',').map(origin => origin.trim())
+      : ['http://localhost:9992', 'http://localhost:3000'];
+
     app.enableCors({
-      origin: '*',
+      origin: allowedOrigins,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+      credentials: true,
+      maxAge: 86400, // 24 hours
     });
 
-    await app.listen(process.env.PORT ?? 9991);
+    const port = process.env.PORT ?? 9991;
+    await app.listen(port);
+
+    logger.log(`🚀 4g3n7-agent-cc is running on port ${port}`);
+    logger.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
   } catch (error) {
-    console.error('Error starting application:', error);
+    logger.error('Error starting application:', error);
+    process.exit(1);
   }
 }
 bootstrap();
