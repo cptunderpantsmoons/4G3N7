@@ -12,6 +12,7 @@ import { WebScraperExtension } from '../extensions/web-scraper.extension';
 import { WorkflowExtension } from '../extensions/workflow.extension';
 import { ConfigService } from '@nestjs/config';
 import { CacheService } from './cache.service';
+import { WorkflowEngineService } from './workflow-engine.service';
 
 @Injectable()
 export class ExtensionLoaderService implements OnModuleInit {
@@ -22,6 +23,7 @@ export class ExtensionLoaderService implements OnModuleInit {
     private readonly lifecycleManager: ExtensionLifecycleManager,
     private readonly configService: ConfigService,
     private readonly cacheService: CacheService,
+    private readonly workflowEngine: WorkflowEngineService,
   ) {}
 
   async onModuleInit(): Promise<void> {

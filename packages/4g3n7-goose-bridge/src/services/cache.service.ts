@@ -23,6 +23,7 @@ export class CacheService {
   private readonly logger = new Logger(CacheService.name);
   private redisClient: Redis | null = null;
   private redisUrl: string;
+  private memoryCache: Map<string, { value: any; expiry?: number }> = new Map();
   private stats: CacheStats = {
     hits: 0,
     misses: 0,
@@ -44,8 +45,8 @@ export class CacheService {
       await this.redisClient.ping();
       this.logger.log('Cache Service initialized with IORedis');
     } catch (error) {
-      this.logger.error('Failed to initialize Cache Service', error);
-      throw error;
+      this.logger.warn('Redis not available, falling back to in-memory cache', error);
+      this.redisClient = null; // Use in-memory fallback
     }
   }
 
@@ -54,17 +55,28 @@ export class CacheService {
    */
   async get<T>(key: string, options?: CacheOptions): Promise<T | null> {
     try {
-      if (!this.redisClient) {
-        this.logger.warn('Redis client not initialized');
-        return null;
-      }
       const fullKey = this.buildKey(key, options);
-      const value = await this.redisClient.get(fullKey);
 
-      if (value) {
-        this.stats.hits++;
-        this.updateHitRate();
-        return JSON.parse(value) as T;
+      if (this.redisClient) {
+        // Use Redis if available
+        const value = await this.redisClient.get(fullKey);
+        if (value) {
+          this.stats.hits++;
+          this.updateHitRate();
+          return JSON.parse(value) as T;
+        }
+      } else {
+        // Use in-memory cache
+        const entry = this.memoryCache.get(fullKey);
+        if (entry) {
+          if (entry.expiry && Date.now() > entry.expiry) {
+            this.memoryCache.delete(fullKey);
+          } else {
+            this.stats.hits++;
+            this.updateHitRate();
+            return entry.value as T;
+          }
+        }
       }
 
       this.stats.misses++;
@@ -85,21 +97,28 @@ export class CacheService {
     options?: CacheOptions
   ): Promise<void> {
     try {
-      if (!this.redisClient) {
-        this.logger.warn('Redis client not initialized');
-        return;
-      }
       const fullKey = this.buildKey(key, options);
-      const serialized = JSON.stringify(value);
 
-      if (options?.ttl) {
-        await this.redisClient.setex(
-          fullKey,
-          Math.ceil(options.ttl / 1000), // convert ms to seconds
-          serialized
-        );
+      if (this.redisClient) {
+        // Use Redis if available
+        const serialized = JSON.stringify(value);
+
+        if (options?.ttl) {
+          await this.redisClient.setex(
+            fullKey,
+            Math.ceil(options.ttl / 1000), // convert ms to seconds
+            serialized
+          );
+        } else {
+          await this.redisClient.set(fullKey, serialized);
+        }
       } else {
-        await this.redisClient.set(fullKey, serialized);
+        // Use in-memory cache
+        const entry = {
+          value,
+          expiry: options?.ttl ? Date.now() + options.ttl : undefined
+        };
+        this.memoryCache.set(fullKey, entry);
       }
 
       this.stats.sets++;

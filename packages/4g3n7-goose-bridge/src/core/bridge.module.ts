@@ -25,6 +25,15 @@ import { ExtensionLoaderService } from '../services/extension-loader.service';
 import { DataTransformerService } from '../services/data-transformer.service';
 import { DataValidatorService } from '../services/data-validator.service';
 import { CacheService } from '../services/cache.service';
+import { WorkflowEngineService } from '../services/workflow-engine.service';
+import { DataStorageService } from '../services/data-storage.service';
+import { DataIndexService } from '../services/data-index.service';
+import { WebAutomationService } from '../services/web-automation.service';
+import { DesktopControlService } from '../services/desktop-control.service';
+import { MacroEngineService } from '../services/macro-engine.service';
+import { ScreenRecorderService } from '../services/screen-recorder.service';
+import { WindowManagerService } from '../services/window-manager.service';
+import { SystemMonitorService } from '../services/system-monitor.service';
 
 @Module({
   imports: [
@@ -78,6 +87,18 @@ import { CacheService } from '../services/cache.service';
     CacheService,
     DataTransformerService,
     DataValidatorService,
+    WorkflowEngineService,
+    {
+      provide: DataStorageService,
+      useFactory: () => new DataStorageService({ type: 'memory', database: '4g3n7' }),
+    },
+    DataIndexService,
+    WebAutomationService,
+    DesktopControlService,
+    MacroEngineService,
+    ScreenRecorderService,
+    WindowManagerService,
+    SystemMonitorService,
     PermissionService,
     ApiKeyService,
     AuditService,
