@@ -1,251 +1,160 @@
 /**
- * Context Management Interfaces
- * Multi-dimensional context management with persistence, snapshots, and recovery
+ * Context Management Interfaces for Phase 4
+ * Defines session context, state persistence, and context switching
  */
 
 export enum ContextType {
-  USER = 'user',
   SESSION = 'session',
+  USER = 'user',
   TASK = 'task',
+  WORKFLOW = 'workflow',
   CONVERSATION = 'conversation',
-  SYSTEM = 'system',
 }
 
-export interface Context {
+export enum ContextState {
+  CREATED = 'created',
+  ACTIVE = 'active',
+  SUSPENDED = 'suspended',
+  ARCHIVED = 'archived',
+  CLOSED = 'closed',
+}
+
+export interface ContextEntity {
   id: string;
-  type: ContextType;
-  createdAt: Date;
-  updatedAt: Date;
-  expiresAt?: Date;
-  state: ContextState;
-  parent?: string; // Parent context ID
-  children?: string[]; // Child context IDs
-  metadata?: Record<string, any>;
-}
-
-export interface ContextState {
-  variables: Map<string, any>;
-  properties: Record<string, any>;
-  timestamp: Date;
-}
-
-// User Context
-export interface UserContext extends Context {
-  type: ContextType.USER;
-  state: UserContextState;
-}
-
-export interface UserContextState extends ContextState {
-  userId: string;
-  username: string;
-  preferences: Record<string, any>;
-  roles: string[];
-  permissions: string[];
-  profile: Record<string, any>;
-}
-
-// Session Context
-export interface SessionContext extends Context {
-  type: ContextType.SESSION;
-  state: SessionContextState;
-}
-
-export interface SessionContextState extends ContextState {
-  sessionId: string;
-  userId: string;
-  startTime: Date;
-  lastActivityTime: Date;
-  isActive: boolean;
-  interactions: Interaction[];
-  environment: Record<string, any>;
-}
-
-// Task Context
-export interface TaskContext extends Context {
-  type: ContextType.TASK;
-  state: TaskContextState;
-}
-
-export interface TaskContextState extends ContextState {
-  taskId: string;
-  taskType: string;
-  inputs: Record<string, any>;
-  outputs?: Record<string, any>;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  progress: number; // 0-100
-  error?: string;
-  startTime?: Date;
-  endTime?: Date;
-  attempts: number;
-  steps: TaskStep[];
-}
-
-// Conversation Context
-export interface ConversationContext extends Context {
-  type: ContextType.CONVERSATION;
-  state: ConversationContextState;
-}
-
-export interface ConversationContextState extends ContextState {
-  conversationId: string;
-  userId: string;
-  sessionId: string;
-  messages: Message[];
-  topic?: string;
-  sentiment: 'positive' | 'neutral' | 'negative';
-  language: string;
-  summary?: string;
-}
-
-// System Context
-export interface SystemContext extends Context {
-  type: ContextType.SYSTEM;
-  state: SystemContextState;
-}
-
-export interface SystemContextState extends ContextState {
-  resources: ResourceInfo;
-  configuration: Record<string, any>;
-  loadAverage: number;
-  activeExtensions: string[];
-  activeServices: string[];
-}
-
-// Context Components
-export interface Interaction {
-  timestamp: Date;
   type: string;
-  action: string;
-  details: Record<string, any>;
-}
-
-export interface Message {
-  id: string;
+  name: string;
+  value: any;
   timestamp: Date;
-  sender: string;
-  content: string;
   metadata?: Record<string, any>;
 }
 
-export interface TaskStep {
-  stepNumber: number;
-  name: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  startTime?: Date;
-  endTime?: Date;
-  result?: Record<string, any>;
-  error?: string;
+export interface ContextMemory {
+  key: string;
+  value: any;
+  accessCount: number;
+  lastAccessedAt: Date;
+  createdAt: Date;
+  ttl?: number; // milliseconds
 }
 
-export interface ResourceInfo {
-  cpuUsage: number;
-  memoryUsage: number;
-  diskUsage: number;
-  networkBandwidth: number;
-  timestamp: Date;
-}
-
-// Context Snapshot
 export interface ContextSnapshot {
   id: string;
   contextId: string;
-  snapshotTime: Date;
-  state: ContextState;
-  label?: string;
-  description?: string;
-  tags: string[];
+  timestamp: Date;
+  state: Record<string, any>;
+  entities: ContextEntity[];
+  memory: ContextMemory[];
+  metadata?: Record<string, any>;
 }
 
-// Context History
-export interface ContextHistory {
+export interface ExecutionContext {
   contextId: string;
-  snapshots: ContextSnapshot[];
-  totalSnapshots: number;
-  oldestSnapshot: Date;
-  newestSnapshot: Date;
-}
-
-// Context Search Query
-export interface ContextSearchQuery {
-  type?: ContextType;
+  type: ContextType;
+  state: ContextState;
   userId?: string;
   sessionId?: string;
   taskId?: string;
+  workflowId?: string;
+  startTime: Date;
+  lastActivityTime: Date;
+  endTime?: Date;
+  entities: Map<string, ContextEntity>;
+  memory: Map<string, ContextMemory>;
+  variables: Map<string, any>;
+  results: Map<string, any>;
+  errors: Error[];
+  metadata?: Record<string, any>;
+}
+
+export interface ContextSwitchOperation {
+  fromContextId: string;
+  toContextId: string;
+  reason: string;
+  timestamp: Date;
+  dataTransferred?: string[];
+  preserveState?: boolean;
+}
+
+export interface ContextHistory {
+  contextId: string;
+  snapshots: ContextSnapshot[];
+  switches: ContextSwitchOperation[];
+  createdAt: Date;
+  lastModified: Date;
+  totalSnapshots: number;
+}
+
+export interface ContextPersistenceConfig {
+  enabled: boolean;
+  storageBackend: 'memory' | 'database' | 'redis';
+  snapshotInterval?: number; // milliseconds
+  maxSnapshots?: number;
+  autoArchive?: boolean;
+  archiveAfter?: number; // milliseconds
+  encryptionEnabled?: boolean;
+}
+
+export interface ContextMergingStrategy {
+  strategy: 'overwrite' | 'merge' | 'conflict';
+  prioritizeNew?: boolean;
+  preserveHistory?: boolean;
+  conflictResolution?: 'first-write-wins' | 'last-write-wins' | 'manual';
+}
+
+export interface ContextDiff {
+  contextId: string;
+  previousSnapshot: ContextSnapshot;
+  currentSnapshot: ContextSnapshot;
+  added: Record<string, any>;
+  modified: Record<string, any>;
+  removed: string[];
+  timestamp: Date;
+}
+
+export interface ContextStatistics {
+  totalContexts: number;
+  activeContexts: number;
+  totalSessions: number;
+  avgContextDuration: number;
+  avgMemorySize: number;
+  mostActiveContext?: string;
+  lastActivity: Date;
+  snapshotsCreated: number;
+  contextSwitches: number;
+}
+
+export interface ContextQuery {
+  contextId?: string;
+  type?: ContextType;
+  state?: ContextState;
+  userId?: string;
   createdAfter?: Date;
   createdBefore?: Date;
-  isActive?: boolean;
   limit?: number;
   offset?: number;
 }
 
-// Context Search Result
-export interface ContextSearchResult {
-  contexts: Context[];
+export interface ContextQueryResult {
+  contexts: ExecutionContext[];
   total: number;
-  hasMore: boolean;
+  timestamp: Date;
 }
 
-// Context Merge Request
-export interface ContextMergeRequest {
-  sourceContextId: string;
-  targetContextId: string;
-  mergeStrategy: 'overwrite' | 'merge' | 'conflict';
+export interface ContextConfig {
+  maxContexts: number;
+  defaultTTL: number; // milliseconds
+  snapshotInterval: number;
+  persistenceConfig: ContextPersistenceConfig;
+  mergingStrategy: ContextMergingStrategy;
+  autoCleanup: boolean;
+  cleanupInterval: number; // milliseconds
 }
 
-// Context Sharing
-export interface ContextSharingRequest {
-  contextId: string;
-  sharedWith: string[]; // User IDs or extension IDs
-  permissions: 'read' | 'write';
-  expiresAt?: Date;
-}
-
-// Context Recovery
-export interface ContextRecoveryPoint {
+export interface ContextEvent {
   id: string;
+  type: 'created' | 'updated' | 'switched' | 'archived' | 'closed';
   contextId: string;
   timestamp: Date;
-  snapshotId: string;
-  label: string;
-}
-
-// Context Validation Result
-export interface ContextValidationResult {
-  isValid: boolean;
-  errors: Array<{ field: string; message: string }>;
-  warnings: Array<{ field: string; message: string }>;
-}
-
-// Context Statistics
-export interface ContextStatistics {
-  type: ContextType;
-  activeCount: number;
-  inactiveCount: number;
-  averageLifetime: number; // milliseconds
-  totalCreated: number;
-  lastActivityTime: Date;
-}
-
-// Context Update Request
-export interface ContextUpdateRequest {
-  variables?: Record<string, any>;
-  properties?: Record<string, any>;
+  changes?: ContextDiff;
   metadata?: Record<string, any>;
-  expiresAt?: Date;
-}
-
-// Context Cleanup Policy
-export interface ContextCleanupPolicy {
-  type?: ContextType;
-  maxAge?: number; // milliseconds
-  keepActive?: boolean;
-  archiveBeforeDelete?: boolean;
-}
-
-// Context Inheritance
-export interface ContextInheritanceRequest {
-  parentContextId: string;
-  childContextType: ContextType;
-  inheritedVariables?: string[];
-  inheritedProperties?: string[];
 }
