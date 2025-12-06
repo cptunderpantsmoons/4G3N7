@@ -34,6 +34,11 @@ import { MacroEngineService } from '../services/macro-engine.service';
 import { ScreenRecorderService } from '../services/screen-recorder.service';
 import { WindowManagerService } from '../services/window-manager.service';
 import { SystemMonitorService } from '../services/system-monitor.service';
+import { ImageAnalyzerService } from '../services/image-analyzer.service';
+import { OCRService } from '../services/ocr.service';
+import { ElementDetectorService } from '../services/element-detector.service';
+import { LayoutAnalyzerService } from '../services/layout-analyzer.service';
+import { ChangeDetectorService } from '../services/change-detector.service';
 
 @Module({
   imports: [
@@ -99,6 +104,11 @@ import { SystemMonitorService } from '../services/system-monitor.service';
     ScreenRecorderService,
     WindowManagerService,
     SystemMonitorService,
+    ImageAnalyzerService,
+    OCRService,
+    ElementDetectorService,
+    LayoutAnalyzerService,
+    ChangeDetectorService,
     PermissionService,
     ApiKeyService,
     AuditService,
