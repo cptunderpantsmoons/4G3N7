@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BridgeController } from './bridge.controller';
+import { GooseBridgeController } from './bridge.controller';
 import { GooseBridgeService } from './bridge.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { PermissionsGuard } from './permissions.guard';
@@ -9,8 +9,8 @@ import {
 } from '../common/exceptions/custom.exceptions';
 import { GooseTaskStatus, GooseTaskPriority } from '../interfaces/types';
 
-describe('BridgeController', () => {
-  let controller: BridgeController;
+describe('GooseBridgeController', () => {
+  let controller: GooseBridgeController;
   let service: GooseBridgeService;
 
   const mockBridgeService = {
@@ -36,7 +36,7 @@ describe('BridgeController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [BridgeController],
+      controllers: [GooseBridgeController],
       providers: [
         {
           provide: GooseBridgeService,
@@ -50,7 +50,7 @@ describe('BridgeController', () => {
       .useValue(mockPermissionsGuard)
       .compile();
 
-    controller = module.get<BridgeController>(BridgeController);
+    controller = module.get<GooseBridgeController>(GooseBridgeController);
     service = module.get<GooseBridgeService>(GooseBridgeService);
   });
 

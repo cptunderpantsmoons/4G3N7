@@ -11,18 +11,22 @@ class TestExtension extends BaseExtension {
       version: '1.0.0',
       description: 'Test extension for unit tests',
       author: 'Test Author',
+      permissions: [],
+      entryPoint: 'test.ts',
       capabilities: [
         {
           id: 'test-capability',
           name: 'Test Capability',
           description: 'Test capability',
+          operations: ['test'],
+          requiredPermissions: [],
         },
       ],
     };
   }
 
-  async executeTask(task: any): Promise<any> {
-    return { success: true };
+  async execute(task: any): Promise<any> {
+    return { success: true, taskId: task.taskId, data: {} };
   }
 }
 
@@ -100,12 +104,14 @@ describe('ExtensionRegistry', () => {
             version: '1.0.0',
             description: 'Test extension 2',
             author: 'Test Author',
+            permissions: [],
+            entryPoint: 'test2.ts',
             capabilities: [],
           };
         }
 
-        async executeTask(task: any): Promise<any> {
-          return { success: true };
+        async execute(task: any): Promise<any> {
+          return { success: true, taskId: task.taskId, data: {} };
         }
       }
 

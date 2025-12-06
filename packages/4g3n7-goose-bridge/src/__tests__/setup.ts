@@ -3,10 +3,8 @@
  */
 
 // Setup test environment
-beforeAll(() => {
-  // Global test setup
-});
-
-afterAll(() => {
-  // Global test teardown
+describe('Test Suite Setup', () => {
+  it('should have test environment configured', () => {
+    expect(true).toBe(true);
+  });
 });

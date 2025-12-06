@@ -3,7 +3,7 @@
  * Manages extension configuration with JSON Schema validation
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import Ajv, { JSONSchemaType, ValidateFunction } from 'ajv';
 import { ExtensionConfig } from '../interfaces/types';
 
@@ -21,7 +21,7 @@ export class ConfigurationService {
   private validators: Map<string, ValidateFunction> = new Map();
   private configCache: Map<string, any> = new Map();
 
-  constructor(private readonly store?: ConfigStore) {
+  constructor(@Optional() private readonly store?: ConfigStore) {
     this.ajv = new Ajv({
       allErrors: true,
       useDefaults: true,

@@ -118,10 +118,11 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException for invalid credentials', async () => {
+      const hashedPassword = await bcrypt.hash('testpassword', 10);
       mockConfigService.get.mockImplementation((key: string) => {
         if (key === 'NODE_ENV') return 'development';
         if (key === 'AUTH_USERS') {
-          return `testuser:${await bcrypt.hash('testpassword', 10)}:admin:*`;
+          return `testuser:${hashedPassword}:admin:*`;
         }
         return undefined;
       });

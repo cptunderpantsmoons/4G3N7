@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 export interface CacheOptions {
@@ -21,6 +22,7 @@ export interface CacheStats {
 export class CacheService {
   private readonly logger = new Logger(CacheService.name);
   private redisClient: Redis | null = null;
+  private redisUrl: string;
   private stats: CacheStats = {
     hits: 0,
     misses: 0,
@@ -30,7 +32,11 @@ export class CacheService {
   };
   private readonly namespace: string = 'cache:';
 
-  constructor(private readonly redisUrl: string = 'redis://localhost:6379') {}
+  constructor(
+    @Optional() private readonly configService?: ConfigService,
+  ) {
+    this.redisUrl = configService?.get<string>('REDIS_URL') || 'redis://localhost:6379';
+  }
 
   async onModuleInit(): Promise<void> {
     try {

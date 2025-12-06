@@ -9,6 +9,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { GooseBridgeController } from './bridge.controller';
 import { AuthController } from './auth.controller';
+import { DataProcessingController } from './data-processing.controller';
 import { GooseBridgeService } from './bridge.service';
 import { AuthService } from './auth.service';
 import { ConfigurationService } from './configuration.service';
@@ -20,6 +21,10 @@ import { AuditService } from './audit.service';
 import { HealthService } from './health.service';
 import { MetricsService } from './metrics.service';
 import { JwtStrategy } from './jwt.strategy';
+import { ExtensionLoaderService } from '../services/extension-loader.service';
+import { DataTransformerService } from '../services/data-transformer.service';
+import { DataValidatorService } from '../services/data-validator.service';
+import { CacheService } from '../services/cache.service';
 
 @Module({
   imports: [
@@ -61,6 +66,7 @@ import { JwtStrategy } from './jwt.strategy';
   controllers: [
     GooseBridgeController,
     AuthController,
+    DataProcessingController,
   ],
   providers: [
     GooseBridgeService,
@@ -68,6 +74,10 @@ import { JwtStrategy } from './jwt.strategy';
     ConfigurationService,
     ExtensionRegistry,
     ExtensionLifecycleManager,
+    ExtensionLoaderService,
+    CacheService,
+    DataTransformerService,
+    DataValidatorService,
     PermissionService,
     ApiKeyService,
     AuditService,

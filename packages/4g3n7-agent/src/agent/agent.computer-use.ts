@@ -24,6 +24,14 @@ import {
 import { Logger } from '@nestjs/common';
 import { LoggerService } from '../logging/logger.service';
 
+// Helper function to safely extract error information
+function getErrorInfo(error: unknown): { message: string; stack?: string } {
+  if (error instanceof Error) {
+    return { message: error.message, stack: error.stack };
+  }
+  return { message: String(error) };
+}
+
 const G3N7_DESKTOP_BASE_URL = process.env.G3N7_DESKTOP_BASE_URL as string;
 
 // Initialize a logger instance for computer operations
@@ -63,7 +71,8 @@ export async function handleComputerToolUse(
         ],
       };
     } catch (error) {
-      logger.error(`Screenshot failed: ${error.message}`, error.stack);
+      const { message, stack } = getErrorInfo(error);
+      logger.error(`Screenshot failed: ${message}`, stack);
       return {
         type: MessageContentType.ToolResult,
         tool_use_id: block.id,
@@ -96,9 +105,10 @@ export async function handleComputerToolUse(
         ],
       };
     } catch (error) {
+      const { message, stack } = getErrorInfo(error);
       logger.error(
-        `Getting cursor position failed: ${error.message}`,
-        error.stack,
+        `Getting cursor position failed: ${message}`,
+        stack,
       );
       return {
         type: MessageContentType.ToolResult,
@@ -228,9 +238,10 @@ export async function handleComputerToolUse(
 
     return toolResult;
   } catch (error) {
+    const { message, stack } = getErrorInfo(error);
     logger.error(
-      `Error executing ${block.name} tool: ${error.message}`,
-      error.stack,
+      `Error executing ${block.name} tool: ${message}`,
+      stack,
     );
     return {
       type: MessageContentType.ToolResult,
@@ -238,7 +249,7 @@ export async function handleComputerToolUse(
       content: [
         {
           type: MessageContentType.Text,
-          text: `Error executing ${block.name} tool: ${error.message}`,
+          text: `Error executing ${block.name} tool: ${message}`,
         },
       ],
       is_error: true,
@@ -262,7 +273,8 @@ async function moveMouse(input: { coordinates: Coordinates }): Promise<void> {
       }),
     });
   } catch (error) {
-    computerLogger.error('Error in move_mouse action:', error);
+    const { message } = getErrorInfo(error);
+    computerLogger.error('Error in move_mouse action:', message);
     throw error;
   }
 }
@@ -287,7 +299,8 @@ async function traceMouse(input: {
       }),
     });
   } catch (error) {
-    computerLogger.error('Error in trace_mouse action:', error);
+    const { message } = getErrorInfo(error);
+    computerLogger.error('Error in trace_mouse action:', message);
     throw error;
   }
 }
@@ -316,7 +329,8 @@ async function clickMouse(input: {
       }),
     });
   } catch (error) {
-    computerLogger.error('Error in click_mouse action:', error);
+    const { message } = getErrorInfo(error);
+    computerLogger.error('Error in click_mouse action:', message);
     throw error;
   }
 }
@@ -343,7 +357,8 @@ async function pressMouse(input: {
       }),
     });
   } catch (error) {
-    computerLogger.error('Error in press_mouse action:', error);
+    const { message } = getErrorInfo(error);
+    computerLogger.error('Error in press_mouse action:', message);
     throw error;
   }
 }
@@ -370,7 +385,8 @@ async function dragMouse(input: {
       }),
     });
   } catch (error) {
-    computerLogger.error('Error in drag_mouse action:', error);
+    const { message } = getErrorInfo(error);
+    computerLogger.error('Error in drag_mouse action:', message);
     throw error;
   }
 }
@@ -399,7 +415,8 @@ async function scroll(input: {
       }),
     });
   } catch (error) {
-    computerLogger.error('Error in scroll action:', error);
+    const { message } = getErrorInfo(error);
+    computerLogger.error('Error in scroll action:', message);
     throw error;
   }
 }
@@ -422,7 +439,8 @@ async function typeKeys(input: {
       }),
     });
   } catch (error) {
-    computerLogger.error('Error in type_keys action:', error);
+    const { message } = getErrorInfo(error);
+    computerLogger.error('Error in type_keys action:', message);
     throw error;
   }
 }
@@ -445,7 +463,8 @@ async function pressKeys(input: {
       }),
     });
   } catch (error) {
-    computerLogger.error('Error in press_keys action:', error);
+    const { message } = getErrorInfo(error);
+    computerLogger.error('Error in press_keys action:', message);
     throw error;
   }
 }
@@ -468,7 +487,8 @@ async function typeText(input: {
       }),
     });
   } catch (error) {
-    computerLogger.error('Error in type_text action:', error);
+    const { message } = getErrorInfo(error);
+    computerLogger.error('Error in type_text action:', message);
     throw error;
   }
 }
@@ -487,7 +507,8 @@ async function pasteText(input: { text: string }): Promise<void> {
       }),
     });
   } catch (error) {
-    computerLogger.error('Error in paste_text action:', error);
+    const { message } = getErrorInfo(error);
+    computerLogger.error('Error in paste_text action:', message);
     throw error;
   }
 }
@@ -506,7 +527,8 @@ async function wait(input: { duration: number }): Promise<void> {
       }),
     });
   } catch (error) {
-    computerLogger.error('Error in wait action:', error);
+    const { message } = getErrorInfo(error);
+    computerLogger.error('Error in wait action:', message);
     throw error;
   }
 }
@@ -526,7 +548,8 @@ async function cursorPosition(): Promise<Coordinates> {
     const data = await response.json();
     return { x: data.x, y: data.y };
   } catch (error) {
-    computerLogger.error('Error in cursor_position action:', error);
+    const { message } = getErrorInfo(error);
+    computerLogger.error('Error in cursor_position action:', message);
     throw error;
   }
 }
