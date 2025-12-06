@@ -84,9 +84,9 @@ export class TasksOptimizedService {
           taskId: task.id,
         }));
 
-        filesDescription += createTaskDto.files.map(
-          (file) => `\nFile ${file.name} written to desktop.`,
-        ).join('');
+        filesDescription += createTaskDto.files
+          .map((file) => `\nFile ${file.name} written to desktop.`)
+          .join('');
 
         // Batch insert files for better performance
         await prisma.file.createMany({
@@ -166,7 +166,7 @@ export class TasksOptimizedService {
     `;
 
     if (task && Array.isArray(task) && task.length > 0) {
-      const taskRecord = task[0] as any;
+      const taskRecord = task[0];
       this.logger.log(
         `Found existing task with ID: ${taskRecord.id}, and status ${taskRecord.status}. Resuming.`,
       );
@@ -374,7 +374,7 @@ export class TasksOptimizedService {
     const messages = await this.prisma.message.findMany({
       where: {
         taskId,
-        ...(cursor ? { id: { lt: cursor } } : {})
+        ...(cursor ? { id: { lt: cursor } } : {}),
       },
       select: {
         id: true,
@@ -393,7 +393,9 @@ export class TasksOptimizedService {
       messages.pop(); // Remove the extra item
     }
 
-    const nextCursor = hasNextPage ? messages[messages.length - 1].id : undefined;
+    const nextCursor = hasNextPage
+      ? messages[messages.length - 1].id
+      : undefined;
 
     return {
       messages: messages.reverse(), // Reverse to get chronological order

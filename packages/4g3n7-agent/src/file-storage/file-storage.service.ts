@@ -1,12 +1,22 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, S3ClientConfig } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  S3ClientConfig,
+} from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 
 export interface FileStorageProvider {
-  uploadFile(key: string, buffer: Buffer, contentType?: string): Promise<string>;
+  uploadFile(
+    key: string,
+    buffer: Buffer,
+    contentType?: string,
+  ): Promise<string>;
   getFile(key: string): Promise<Buffer>;
   deleteFile(key: string): Promise<void>;
   getSignedUrl(key: string, expiresIn?: number): Promise<string>;
@@ -35,17 +45,29 @@ export class FileStorageService implements OnModuleInit {
   }
 
   private loadConfig(): FileStorageConfig {
-    const provider = this.configService.get<string>('FILE_STORAGE_PROVIDER', 'local') as 's3' | 'minio' | 'local';
+    const provider = this.configService.get<string>(
+      'FILE_STORAGE_PROVIDER',
+      'local',
+    ) as 's3' | 'minio' | 'local';
 
     return {
       provider,
       region: this.configService.get<string>('AWS_REGION', 'us-east-1'),
-      bucket: this.configService.get<string>('FILE_STORAGE_BUCKET', '4g3n7-files'),
+      bucket: this.configService.get<string>(
+        'FILE_STORAGE_BUCKET',
+        '4g3n7-files',
+      ),
       accessKeyId: this.configService.get<string>('AWS_ACCESS_KEY_ID'),
       secretAccessKey: this.configService.get<string>('AWS_SECRET_ACCESS_KEY'),
       endpoint: this.configService.get<string>('MINIO_ENDPOINT'),
-      forcePathStyle: this.configService.get<boolean>('MINIO_FORCE_PATH_STYLE', false),
-      localPath: this.configService.get<string>('LOCAL_STORAGE_PATH', './uploads'),
+      forcePathStyle: this.configService.get<boolean>(
+        'MINIO_FORCE_PATH_STYLE',
+        false,
+      ),
+      localPath: this.configService.get<string>(
+        'LOCAL_STORAGE_PATH',
+        './uploads',
+      ),
     };
   }
 
@@ -57,16 +79,26 @@ export class FileStorageService implements OnModuleInit {
       case 'local':
         return new LocalFileStorageProvider(this.config);
       default:
-        throw new Error(`Unsupported file storage provider: ${this.config.provider}`);
+        throw new Error(
+          `Unsupported file storage provider: ${this.config.provider}`,
+        );
     }
   }
 
   async onModuleInit() {
-    this.logger.log(`File storage initialized with provider: ${this.config.provider}`);
-    this.logger.log(`Bucket/Path: ${this.config.bucket || this.config.localPath}`);
+    this.logger.log(
+      `File storage initialized with provider: ${this.config.provider}`,
+    );
+    this.logger.log(
+      `Bucket/Path: ${this.config.bucket || this.config.localPath}`,
+    );
   }
 
-  async uploadFile(key: string, buffer: Buffer, contentType?: string): Promise<string> {
+  async uploadFile(
+    key: string,
+    buffer: Buffer,
+    contentType?: string,
+  ): Promise<string> {
     try {
       const result = await this.provider.uploadFile(key, buffer, contentType);
       this.logger.log(`File uploaded successfully: ${key}`);
@@ -135,9 +167,13 @@ class S3FileStorageProvider implements FileStorageProvider {
     this.s3Client = new S3Client(clientConfig);
   }
 
-  async uploadFile(key: string, buffer: Buffer, contentType?: string): Promise<string> {
+  async uploadFile(
+    key: string,
+    buffer: Buffer,
+    contentType?: string,
+  ): Promise<string> {
     const command = new PutObjectCommand({
-      Bucket: this.config.bucket!,
+      Bucket: this.config.bucket,
       Key: key,
       Body: buffer,
       ContentType: contentType || 'application/octet-stream',
@@ -150,7 +186,7 @@ class S3FileStorageProvider implements FileStorageProvider {
 
   async getFile(key: string): Promise<Buffer> {
     const command = new GetObjectCommand({
-      Bucket: this.config.bucket!,
+      Bucket: this.config.bucket,
       Key: key,
     });
 
@@ -169,7 +205,7 @@ class S3FileStorageProvider implements FileStorageProvider {
 
   async deleteFile(key: string): Promise<void> {
     const command = new DeleteObjectCommand({
-      Bucket: this.config.bucket!,
+      Bucket: this.config.bucket,
       Key: key,
     });
 
@@ -179,7 +215,7 @@ class S3FileStorageProvider implements FileStorageProvider {
   async getSignedUrl(key: string, expiresIn: number): Promise<string> {
     const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
     const command = new GetObjectCommand({
-      Bucket: this.config.bucket!,
+      Bucket: this.config.bucket,
       Key: key,
     });
 
@@ -203,7 +239,11 @@ class LocalFileStorageProvider implements FileStorageProvider {
     return join(this.config.localPath || './uploads', key);
   }
 
-  async uploadFile(key: string, buffer: Buffer, contentType?: string): Promise<string> {
+  async uploadFile(
+    key: string,
+    buffer: Buffer,
+    contentType?: string,
+  ): Promise<string> {
     const filePath = this.getFilePath(key);
     const directory = dirname(filePath);
 

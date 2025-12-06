@@ -18,7 +18,12 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { FileStorageService } from './file-storage.service';
 import { FileMigrationService } from './migration.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiConsumes,
+} from '@nestjs/swagger';
 
 @ApiTags('File Storage')
 @Controller('files')
@@ -44,7 +49,11 @@ export class FileStorageController {
 
     try {
       const key = `${type}/${taskId}/${Date.now()}_${file.originalname}`;
-      const result = await this.fileStorage.uploadFile(key, file.buffer, file.mimetype);
+      const result = await this.fileStorage.uploadFile(
+        key,
+        file.buffer,
+        file.mimetype,
+      );
 
       return {
         success: true,
@@ -55,7 +64,9 @@ export class FileStorageController {
         originalName: file.originalname,
       };
     } catch (error) {
-      throw new InternalServerErrorException(`Failed to upload file: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to upload file: ${error.message}`,
+      );
     }
   }
 
@@ -63,7 +74,8 @@ export class FileStorageController {
   @ApiOperation({ summary: 'Upload a base64 encoded file to object storage' })
   @ApiResponse({ status: 200, description: 'File uploaded successfully' })
   async uploadBase64File(
-    @Body() body: {
+    @Body()
+    body: {
       data: string;
       filename: string;
       taskId: string;
@@ -72,10 +84,18 @@ export class FileStorageController {
     },
   ) {
     try {
-      const { data, filename, taskId, type = 'attachment', mimeType = 'application/octet-stream' } = body;
+      const {
+        data,
+        filename,
+        taskId,
+        type = 'attachment',
+        mimeType = 'application/octet-stream',
+      } = body;
 
       if (!data || !filename || !taskId) {
-        throw new BadRequestException('Missing required fields: data, filename, taskId');
+        throw new BadRequestException(
+          'Missing required fields: data, filename, taskId',
+        );
       }
 
       // Decode base64
@@ -93,7 +113,9 @@ export class FileStorageController {
         originalName: filename,
       };
     } catch (error) {
-      throw new InternalServerErrorException(`Failed to upload file: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to upload file: ${error.message}`,
+      );
     }
   }
 
@@ -111,13 +133,18 @@ export class FileStorageController {
 
       res.send(buffer);
     } catch (error) {
-      throw new InternalServerErrorException(`Failed to get file: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to get file: ${error.message}`,
+      );
     }
   }
 
   @Get(':key/url')
   @ApiOperation({ summary: 'Get a signed URL for a file' })
-  @ApiResponse({ status: 200, description: 'Signed URL generated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Signed URL generated successfully',
+  })
   async getSignedUrl(
     @Param('key') key: string,
     @Query('expiresIn') expiresIn: number = 3600,
@@ -131,7 +158,9 @@ export class FileStorageController {
         expiresIn,
       };
     } catch (error) {
-      throw new InternalServerErrorException(`Failed to generate signed URL: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to generate signed URL: ${error.message}`,
+      );
     }
   }
 
@@ -148,7 +177,9 @@ export class FileStorageController {
         message: 'File deleted successfully',
       };
     } catch (error) {
-      throw new InternalServerErrorException(`Failed to delete file: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to delete file: ${error.message}`,
+      );
     }
   }
 
@@ -158,7 +189,8 @@ export class FileStorageController {
   @ApiOperation({ summary: 'Start Base64 to object storage migration' })
   @ApiResponse({ status: 200, description: 'Migration started' })
   async startMigration(
-    @Body() body: {
+    @Body()
+    body: {
       dryRun?: boolean;
       fileTypes?: string[];
       batchSize?: number;
@@ -172,7 +204,9 @@ export class FileStorageController {
         message: 'Migration started successfully',
       };
     } catch (error) {
-      throw new InternalServerErrorException(`Failed to start migration: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to start migration: ${error.message}`,
+      );
     }
   }
 
@@ -190,7 +224,9 @@ export class FileStorageController {
         stats,
       };
     } catch (error) {
-      throw new InternalServerErrorException(`Failed to get migration progress: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to get migration progress: ${error.message}`,
+      );
     }
   }
 
@@ -206,7 +242,9 @@ export class FileStorageController {
         stats,
       };
     } catch (error) {
-      throw new InternalServerErrorException(`Failed to get migration stats: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to get migration stats: ${error.message}`,
+      );
     }
   }
 
@@ -223,7 +261,9 @@ export class FileStorageController {
         message: 'Migration rollback completed',
       };
     } catch (error) {
-      throw new InternalServerErrorException(`Failed to rollback migration: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to rollback migration: ${error.message}`,
+      );
     }
   }
 
@@ -231,21 +271,21 @@ export class FileStorageController {
     const ext = key.split('.').pop()?.toLowerCase();
 
     const mimeTypes: { [key: string]: string } = {
-      'jpg': 'image/jpeg',
-      'jpeg': 'image/jpeg',
-      'png': 'image/png',
-      'gif': 'image/gif',
-      'webp': 'image/webp',
-      'pdf': 'application/pdf',
-      'txt': 'text/plain',
-      'csv': 'text/csv',
-      'json': 'application/json',
-      'xml': 'application/xml',
-      'zip': 'application/zip',
-      'doc': 'application/msword',
-      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'xls': 'application/vnd.ms-excel',
-      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      pdf: 'application/pdf',
+      txt: 'text/plain',
+      csv: 'text/csv',
+      json: 'application/json',
+      xml: 'application/xml',
+      zip: 'application/zip',
+      doc: 'application/msword',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      xls: 'application/vnd.ms-excel',
+      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     };
 
     return mimeTypes[ext || ''] || 'application/octet-stream';

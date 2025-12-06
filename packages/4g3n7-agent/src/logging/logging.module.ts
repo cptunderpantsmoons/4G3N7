@@ -43,7 +43,9 @@ export class LoggingModule {
   }
 
   static forAsync(options: {
-    useFactory: (...args: any[]) => Promise<LoggerModuleOptions> | LoggerModuleOptions;
+    useFactory: (
+      ...args: any[]
+    ) => Promise<LoggerModuleOptions> | LoggerModuleOptions;
     inject?: any[];
   }): DynamicModule {
     return {

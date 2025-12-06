@@ -3,7 +3,10 @@ import { PrismaClient } from '@prisma/client';
 import { LoggerService } from '../logging/logger.service';
 
 @Injectable()
-export class PrismaOptimizedService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaOptimizedService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   private logger: LoggerService;
 
   constructor() {
@@ -34,7 +37,8 @@ export class PrismaOptimizedService extends PrismaClient implements OnModuleInit
 
     // Monitor slow queries
     this.$on('query', (e) => {
-      if (e.duration > 1000) { // Log queries taking longer than 1 second
+      if (e.duration > 1000) {
+        // Log queries taking longer than 1 second
         this.logger.warn(`Slow Query detected`, {
           component: 'PrismaOptimizedService',
           duration: e.duration,
@@ -65,7 +69,10 @@ export class PrismaOptimizedService extends PrismaClient implements OnModuleInit
   }
 
   // Batch operations for better performance
-  async createManyWithTransaction<T>(createData: T[], model: any): Promise<T[]> {
+  async createManyWithTransaction<T>(
+    createData: T[],
+    model: any,
+  ): Promise<T[]> {
     if (createData.length === 0) return [];
 
     return this.$transaction(async (tx) => {
@@ -79,7 +86,7 @@ export class PrismaOptimizedService extends PrismaClient implements OnModuleInit
           data: batch,
           skipDuplicates: true,
         });
-        results.push(...batchResults as any);
+        results.push(...(batchResults as any));
       }
 
       return results;
@@ -96,7 +103,7 @@ export class PrismaOptimizedService extends PrismaClient implements OnModuleInit
       cursor?: string;
       take?: number;
       skip?: number;
-    }
+    },
   ): Promise<{ data: T[]; nextCursor?: string; hasMore: boolean }> {
     const { cursor, take = 50, ...rest } = options;
 
@@ -111,9 +118,10 @@ export class PrismaOptimizedService extends PrismaClient implements OnModuleInit
       data.pop(); // Remove the extra item
     }
 
-    const nextCursor = hasMore && data.length > 0
-      ? (data[data.length - 1] as any).id
-      : undefined;
+    const nextCursor =
+      hasMore && data.length > 0
+        ? (data[data.length - 1] as any).id
+        : undefined;
 
     return {
       data,
@@ -152,8 +160,11 @@ export class PrismaOptimizedService extends PrismaClient implements OnModuleInit
       `;
 
       // Determine health status
-      const activeConnections = connectionStats.find((s: any) => s.state === 'active');
-      const isHealthy = !activeConnections || activeConnections.connections < 100;
+      const activeConnections = connectionStats.find(
+        (s: any) => s.state === 'active',
+      );
+      const isHealthy =
+        !activeConnections || activeConnections.connections < 100;
 
       return {
         status: isHealthy ? 'healthy' : 'degraded',
@@ -171,7 +182,10 @@ export class PrismaOptimizedService extends PrismaClient implements OnModuleInit
   }
 
   // Bulk delete with soft delete support
-  async softDeleteMany<T>(model: string, where: any): Promise<{ count: number }> {
+  async softDeleteMany<T>(
+    model: string,
+    where: any,
+  ): Promise<{ count: number }> {
     return this.$transaction(async (tx) => {
       // Mark as deleted instead of actually deleting
       const result = await tx[model].updateMany({
@@ -203,17 +217,21 @@ export class PrismaOptimizedService extends PrismaClient implements OnModuleInit
 
       return stats;
     } catch (error) {
-      this.logger.warn('Query stats not available (pg_stat_statements extension may need to be enabled)');
+      this.logger.warn(
+        'Query stats not available (pg_stat_statements extension may need to be enabled)',
+      );
       return [];
     }
   }
 
   // Cleanup old data
-  async cleanupOldData(options: {
-    taskRetentionDays?: number;
-    messageRetentionDays?: number;
-    fileRetentionDays?: number;
-  } = {}): Promise<{ deleted: { tasks: number; messages: number; files: number } }> {
+  async cleanupOldData(
+    options: {
+      taskRetentionDays?: number;
+      messageRetentionDays?: number;
+      fileRetentionDays?: number;
+    } = {},
+  ): Promise<{ deleted: { tasks: number; messages: number; files: number } }> {
     const {
       taskRetentionDays = 90,
       messageRetentionDays = 60,
@@ -237,7 +255,9 @@ export class PrismaOptimizedService extends PrismaClient implements OnModuleInit
           task: {
             status: 'COMPLETED',
             completedAt: {
-              lt: new Date(Date.now() - messageRetentionDays * 24 * 60 * 60 * 1000),
+              lt: new Date(
+                Date.now() - messageRetentionDays * 24 * 60 * 60 * 1000,
+              ),
             },
           },
         },
@@ -249,7 +269,9 @@ export class PrismaOptimizedService extends PrismaClient implements OnModuleInit
           task: {
             status: 'COMPLETED',
             completedAt: {
-              lt: new Date(Date.now() - fileRetentionDays * 24 * 60 * 60 * 1000),
+              lt: new Date(
+                Date.now() - fileRetentionDays * 24 * 60 * 60 * 1000,
+              ),
             },
           },
         },

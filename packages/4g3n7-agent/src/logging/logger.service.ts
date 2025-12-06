@@ -73,7 +73,10 @@ export class LoggerService implements OnModuleInit {
     private configService: ConfigService,
     private moduleRef: ModuleRef,
   ) {
-    this.environment = this.configService.get<string>('NODE_ENV', 'development');
+    this.environment = this.configService.get<string>(
+      'NODE_ENV',
+      'development',
+    );
     this.isProduction = this.environment === 'production';
     this.isDevelopment = this.environment === 'development';
     this.correlationId = randomUUID();
@@ -148,7 +151,11 @@ export class LoggerService implements OnModuleInit {
     }
   }
 
-  private createLogEntry(level: LogLevels, message: string, context?: LogContext): LogEntry {
+  private createLogEntry(
+    level: LogLevels,
+    message: string,
+    context?: LogContext,
+  ): LogEntry {
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
@@ -193,14 +200,18 @@ export class LoggerService implements OnModuleInit {
       LogLevels.CRITICAL,
     ];
 
-    const currentLevelIndex = logLevelOrder.indexOf(this.getLogLevelFromConfig());
+    const currentLevelIndex = logLevelOrder.indexOf(
+      this.getLogLevelFromConfig(),
+    );
     const messageLevelIndex = logLevelOrder.indexOf(level);
 
     return messageLevelIndex >= currentLevelIndex;
   }
 
   private getLogLevelFromConfig(): LogLevels {
-    const configLevel = this.configService.get<string>('LOG_LEVEL', 'info').toUpperCase();
+    const configLevel = this.configService
+      .get<string>('LOG_LEVEL', 'info')
+      .toUpperCase();
     return (configLevel as LogLevels) || LogLevels.INFO;
   }
 
@@ -298,7 +309,11 @@ export class LoggerService implements OnModuleInit {
   }
 
   // Utility methods for common logging patterns
-  logMethodEntry(method: string, args?: any, context?: Partial<LogContext>): void {
+  logMethodEntry(
+    method: string,
+    args?: any,
+    context?: Partial<LogContext>,
+  ): void {
     this.debug(`Entering ${method}`, {
       ...context,
       method,
@@ -307,7 +322,11 @@ export class LoggerService implements OnModuleInit {
     });
   }
 
-  logMethodExit(method: string, result?: any, context?: Partial<LogContext>): void {
+  logMethodExit(
+    method: string,
+    result?: any,
+    context?: Partial<LogContext>,
+  ): void {
     this.debug(`Exiting ${method}`, {
       ...context,
       method,
@@ -316,8 +335,17 @@ export class LoggerService implements OnModuleInit {
     });
   }
 
-  logPerformance(operation: string, duration: number, context?: Partial<LogContext>): void {
-    const level = duration > 5000 ? LogLevels.WARN : duration > 1000 ? LogLevels.INFO : LogLevels.DEBUG;
+  logPerformance(
+    operation: string,
+    duration: number,
+    context?: Partial<LogContext>,
+  ): void {
+    const level =
+      duration > 5000
+        ? LogLevels.WARN
+        : duration > 1000
+          ? LogLevels.INFO
+          : LogLevels.DEBUG;
 
     this.log(level, `Performance: ${operation} took ${duration}ms`, {
       ...context,
@@ -327,8 +355,19 @@ export class LoggerService implements OnModuleInit {
     });
   }
 
-  logApiRequest(method: string, url: string, statusCode: number, duration: number, context?: Partial<LogContext>): void {
-    const level = statusCode >= 500 ? LogLevels.ERROR : statusCode >= 400 ? LogLevels.WARN : LogLevels.INFO;
+  logApiRequest(
+    method: string,
+    url: string,
+    statusCode: number,
+    duration: number,
+    context?: Partial<LogContext>,
+  ): void {
+    const level =
+      statusCode >= 500
+        ? LogLevels.ERROR
+        : statusCode >= 400
+          ? LogLevels.WARN
+          : LogLevels.INFO;
 
     this.log(level, `${method} ${url} - ${statusCode} (${duration}ms)`, {
       ...context,
@@ -339,15 +378,23 @@ export class LoggerService implements OnModuleInit {
     });
   }
 
-  logDatabaseQuery(query: string, duration: number, context?: Partial<LogContext>): void {
+  logDatabaseQuery(
+    query: string,
+    duration: number,
+    context?: Partial<LogContext>,
+  ): void {
     const level = duration > 1000 ? LogLevels.WARN : LogLevels.DEBUG;
 
-    this.log(level, `Database query (${duration}ms): ${query.substring(0, 200)}...`, {
-      ...context,
-      duration,
-      component: 'Database',
-      tags: ['database', 'query'],
-    });
+    this.log(
+      level,
+      `Database query (${duration}ms): ${query.substring(0, 200)}...`,
+      {
+        ...context,
+        duration,
+        component: 'Database',
+        tags: ['database', 'query'],
+      },
+    );
   }
 
   logError(error: Error, context?: Partial<LogContext>): void {
@@ -360,7 +407,11 @@ export class LoggerService implements OnModuleInit {
     });
   }
 
-  logWebSocketEvent(event: string, clientId: string, context?: Partial<LogContext>): void {
+  logWebSocketEvent(
+    event: string,
+    clientId: string,
+    context?: Partial<LogContext>,
+  ): void {
     this.debug(`WebSocket event: ${event} from client ${clientId}`, {
       ...context,
       sessionId: clientId,
@@ -369,13 +420,23 @@ export class LoggerService implements OnModuleInit {
     });
   }
 
-  logAIInteraction(provider: string, model: string, operation: string, context?: Partial<LogContext>): void {
+  logAIInteraction(
+    provider: string,
+    model: string,
+    operation: string,
+    context?: Partial<LogContext>,
+  ): void {
     this.info(`AI ${operation}: ${provider}/${model}`, {
       ...context,
       provider,
       model,
       component: 'AI',
-      tags: ['ai', provider.toLowerCase(), model.toLowerCase(), operation.toLowerCase()],
+      tags: [
+        'ai',
+        provider.toLowerCase(),
+        model.toLowerCase(),
+        operation.toLowerCase(),
+      ],
     });
   }
 
@@ -385,23 +446,31 @@ export class LoggerService implements OnModuleInit {
 
     if (filter) {
       if (filter.level) {
-        filteredLogs = filteredLogs.filter(log => log.level === filter.level);
+        filteredLogs = filteredLogs.filter((log) => log.level === filter.level);
       }
       if (filter.component) {
-        filteredLogs = filteredLogs.filter(log => log.context?.component === filter.component);
+        filteredLogs = filteredLogs.filter(
+          (log) => log.context?.component === filter.component,
+        );
       }
       if (filter.requestId) {
-        filteredLogs = filteredLogs.filter(log => log.context?.requestId === filter.requestId);
+        filteredLogs = filteredLogs.filter(
+          (log) => log.context?.requestId === filter.requestId,
+        );
       }
       if (filter.userId) {
-        filteredLogs = filteredLogs.filter(log => log.context?.userId === filter.userId);
+        filteredLogs = filteredLogs.filter(
+          (log) => log.context?.userId === filter.userId,
+        );
       }
       if (filter.taskId) {
-        filteredLogs = filteredLogs.filter(log => log.context?.taskId === filter.taskId);
+        filteredLogs = filteredLogs.filter(
+          (log) => log.context?.taskId === filter.taskId,
+        );
       }
       if (filter.tags && filter.tags.length > 0) {
-        filteredLogs = filteredLogs.filter(log =>
-          filter.tags!.some(tag => log.context?.tags?.includes(tag))
+        filteredLogs = filteredLogs.filter((log) =>
+          filter.tags!.some((tag) => log.context?.tags?.includes(tag)),
         );
       }
     }
@@ -410,20 +479,28 @@ export class LoggerService implements OnModuleInit {
   }
 
   getMetrics(): LogMetrics {
-    const logsByLevel = this.logs.reduce((acc, log) => {
-      acc[log.level] = (acc[log.level] || 0) + 1;
-      return acc;
-    }, {} as Record<LogLevels, number>);
+    const logsByLevel = this.logs.reduce(
+      (acc, log) => {
+        acc[log.level] = (acc[log.level] || 0) + 1;
+        return acc;
+      },
+      {} as Record<LogLevels, number>,
+    );
 
     const totalLogs = this.logs.length;
-    const errorLogs = (logsByLevel[LogLevels.ERROR] || 0) + (logsByLevel[LogLevels.CRITICAL] || 0);
+    const errorLogs =
+      (logsByLevel[LogLevels.ERROR] || 0) +
+      (logsByLevel[LogLevels.CRITICAL] || 0);
     const errorRate = totalLogs > 0 ? (errorLogs / totalLogs) * 100 : 0;
 
-    const componentCounts = this.logs.reduce((acc, log) => {
-      const component = log.context?.component || 'Unknown';
-      acc[component] = (acc[component] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const componentCounts = this.logs.reduce(
+      (acc, log) => {
+        const component = log.context?.component || 'Unknown';
+        acc[component] = (acc[component] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     const topComponents = Object.entries(componentCounts)
       .sort(([, a], [, b]) => b - a)
@@ -453,7 +530,10 @@ export class LoggerService implements OnModuleInit {
       [LogLevels.CRITICAL]: 5,
     };
 
-    const totalValue = this.logs.reduce((sum, log) => sum + levelValues[log.level], 0);
+    const totalValue = this.logs.reduce(
+      (sum, log) => sum + levelValues[log.level],
+      0,
+    );
     const averageValue = totalValue / this.logs.length;
 
     const levels = Object.values(LogLevels);

@@ -26,51 +26,61 @@ async function bootstrap() {
     app.use(LoggingMiddlewareFactory(loggerService));
 
     // Configure body parser with reasonable payload size limits (reduced from 50MB)
-    app.use(json({
-      limit: '10mb', // Reduced for security
-      type: 'application/json'
-    }));
+    app.use(
+      json({
+        limit: '10mb', // Reduced for security
+        type: 'application/json',
+      }),
+    );
 
-    app.use(urlencoded({
-      limit: '10mb', // Reduced for security
-      extended: true
-    }));
+    app.use(
+      urlencoded({
+        limit: '10mb', // Reduced for security
+        extended: true,
+      }),
+    );
 
     // Add compression middleware for response optimization
-    app.use(compression({
-      level: 6,
-      threshold: 1024, // Only compress responses larger than 1KB
-      filter: (req, res) => {
-        if (req.headers['x-no-compression']) {
-          return false;
-        }
-        return compression.filter(req, res);
-      }
-    }));
+    app.use(
+      compression({
+        level: 6,
+        threshold: 1024, // Only compress responses larger than 1KB
+        filter: (req, res) => {
+          if (req.headers['x-no-compression']) {
+            return false;
+          }
+          return compression.filter(req, res);
+        },
+      }),
+    );
 
     // Global validation pipe with security settings
-    app.useGlobalPipes(new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-    }));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transformOptions: {
+          enableImplicitConversion: true,
+        },
+      }),
+    );
 
     // Enable CORS with restricted origins for security
     const corsOrigin = process.env.CORS_ORIGIN;
     const isProduction = process.env.NODE_ENV === 'production';
-    
+
     if (isProduction && !corsOrigin) {
-      throw new Error('CORS_ORIGIN environment variable is required in production');
+      throw new Error(
+        'CORS_ORIGIN environment variable is required in production',
+      );
     }
-    
+
     // Default to localhost for development, require explicit config for production
-    const allowedOrigins = corsOrigin 
-      ? corsOrigin.split(',').map(origin => origin.trim())
+    const allowedOrigins = corsOrigin
+      ? corsOrigin.split(',').map((origin) => origin.trim())
       : ['http://localhost:9992', 'http://localhost:3000']; // Default UI ports
-    
+
     app.enableCors({
       origin: allowedOrigins,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
@@ -95,7 +105,6 @@ async function bootstrap() {
     logger.log(`🚀 4g3n7-agent is running on port ${port}`);
     logger.log(`📊 Health check: http://localhost:${port}/health`);
     logger.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
-
   } catch (error) {
     logger.error('Error starting application:', error);
     process.exit(1);

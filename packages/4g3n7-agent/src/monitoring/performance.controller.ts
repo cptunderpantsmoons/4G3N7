@@ -15,37 +15,49 @@ export class PerformanceController {
 
       // Task statistics
       const totalTasks = await this.prisma.task.count();
-      const pendingTasks = await this.prisma.task.count({ where: { status: 'PENDING' } });
-      const runningTasks = await this.prisma.task.count({ where: { status: 'RUNNING' } });
-      const completedTasks = await this.prisma.task.count({ where: { status: 'COMPLETED' } });
-      const failedTasks = await this.prisma.task.count({ where: { status: 'FAILED' } });
+      const pendingTasks = await this.prisma.task.count({
+        where: { status: 'PENDING' },
+      });
+      const runningTasks = await this.prisma.task.count({
+        where: { status: 'RUNNING' },
+      });
+      const completedTasks = await this.prisma.task.count({
+        where: { status: 'COMPLETED' },
+      });
+      const failedTasks = await this.prisma.task.count({
+        where: { status: 'FAILED' },
+      });
 
       // Recent task performance (last 24 hours)
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const recentTasks = await this.prisma.task.findMany({
         where: {
           createdAt: {
-            gte: twentyFourHoursAgo
-          }
+            gte: twentyFourHoursAgo,
+          },
         },
         select: {
           status: true,
           createdAt: true,
           executedAt: true,
           completedAt: true,
-        }
+        },
       });
 
       // Calculate average processing time
-      const completedRecentTasks = recentTasks.filter(task =>
-        task.status === 'COMPLETED' && task.executedAt && task.completedAt
+      const completedRecentTasks = recentTasks.filter(
+        (task) =>
+          task.status === 'COMPLETED' && task.executedAt && task.completedAt,
       );
 
-      const avgProcessingTime = completedRecentTasks.length > 0
-        ? completedRecentTasks.reduce((sum, task) => {
-            return sum + (task.completedAt!.getTime() - task.executedAt!.getTime());
-          }, 0) / completedRecentTasks.length
-        : 0;
+      const avgProcessingTime =
+        completedRecentTasks.length > 0
+          ? completedRecentTasks.reduce((sum, task) => {
+              return (
+                sum + (task.completedAt!.getTime() - task.executedAt!.getTime())
+              );
+            }, 0) / completedRecentTasks.length
+          : 0;
 
       // Memory usage
       const memoryUsage = process.memoryUsage();
@@ -67,7 +79,10 @@ export class PerformanceController {
         performance: {
           avgProcessingTime: `${Math.round(avgProcessingTime / 1000)}s`,
           tasksLast24Hours: recentTasks.length,
-          completionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+          completionRate:
+            totalTasks > 0
+              ? Math.round((completedTasks / totalTasks) * 100)
+              : 0,
         },
         system: {
           uptime: process.uptime(),
@@ -95,8 +110,9 @@ export class PerformanceController {
     const dbHealth = await this.prisma.healthCheck();
     const memoryUsage = process.memoryUsage();
 
-    const isHealthy = dbHealth.status === 'healthy' &&
-                     memoryUsage.heapUsed < memoryUsage.heapTotal * 0.9;
+    const isHealthy =
+      dbHealth.status === 'healthy' &&
+      memoryUsage.heapUsed < memoryUsage.heapTotal * 0.9;
 
     return {
       status: isHealthy ? 'healthy' : 'unhealthy',
@@ -149,22 +165,34 @@ export class PerformanceController {
       // Calculate analytics
       const analytics = {
         total: tasks.length,
-        byStatus: tasks.reduce((acc, task) => {
-          acc[task.status] = (acc[task.status] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
-        byPriority: tasks.reduce((acc, task) => {
-          acc[task.priority] = (acc[task.priority] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
-        byType: tasks.reduce((acc, task) => {
-          acc[task.type] = (acc[task.type] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
-        byControl: tasks.reduce((acc, task) => {
-          acc[task.control] = (acc[task.control] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
+        byStatus: tasks.reduce(
+          (acc, task) => {
+            acc[task.status] = (acc[task.status] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
+        byPriority: tasks.reduce(
+          (acc, task) => {
+            acc[task.priority] = (acc[task.priority] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
+        byType: tasks.reduce(
+          (acc, task) => {
+            acc[task.type] = (acc[task.type] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
+        byControl: tasks.reduce(
+          (acc, task) => {
+            acc[task.control] = (acc[task.control] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
         dailyStats: this.calculateDailyStats(tasks, daysNum),
         avgProcessingTime: this.calculateAvgProcessingTime(tasks),
       };
@@ -190,16 +218,16 @@ export class PerformanceController {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateStr = date.toISOString().split('T')[0];
 
-      const dayTasks = tasks.filter(task =>
-        task.createdAt.toISOString().split('T')[0] === dateStr
+      const dayTasks = tasks.filter(
+        (task) => task.createdAt.toISOString().split('T')[0] === dateStr,
       );
 
       stats.push({
         date: dateStr,
         total: dayTasks.length,
-        completed: dayTasks.filter(t => t.status === 'COMPLETED').length,
-        failed: dayTasks.filter(t => t.status === 'FAILED').length,
-        pending: dayTasks.filter(t => t.status === 'PENDING').length,
+        completed: dayTasks.filter((t) => t.status === 'COMPLETED').length,
+        failed: dayTasks.filter((t) => t.status === 'FAILED').length,
+        pending: dayTasks.filter((t) => t.status === 'PENDING').length,
       });
     }
 
@@ -207,8 +235,9 @@ export class PerformanceController {
   }
 
   private calculateAvgProcessingTime(tasks: any[]) {
-    const completedTasks = tasks.filter(task =>
-      task.status === 'COMPLETED' && task.executedAt && task.completedAt
+    const completedTasks = tasks.filter(
+      (task) =>
+        task.status === 'COMPLETED' && task.executedAt && task.completedAt,
     );
 
     if (completedTasks.length === 0) return 0;

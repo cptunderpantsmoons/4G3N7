@@ -70,7 +70,10 @@ export class LoggerController {
 
   @Get('health')
   @ApiOperation({ summary: 'Get logger health status' })
-  @ApiResponse({ status: 200, description: 'Health status retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Health status retrieved successfully',
+  })
   getHealth() {
     const health = this.loggerService.getLoggerHealth();
     return {
@@ -83,20 +86,25 @@ export class LoggerController {
   @ApiOperation({ summary: 'Export logs as JSON' })
   @ApiQuery({ name: 'level', required: false, enum: LogLevels })
   @ApiQuery({ name: 'component', required: false })
-  @ApiQuery({ name: 'format', required: false, enum: ['json', 'csv'], example: 'json' })
+  @ApiQuery({
+    name: 'format',
+    required: false,
+    enum: ['json', 'csv'],
+    example: 'json',
+  })
   @ApiResponse({
     status: 200,
     description: 'Logs exported successfully',
     headers: {
       'Content-Type': {
         description: 'Content type based on format parameter',
-        schema: { type: 'string' }
+        schema: { type: 'string' },
       },
       'Content-Disposition': {
         description: 'File download header',
-        schema: { type: 'string' }
-      }
-    }
+        schema: { type: 'string' },
+      },
+    },
   })
   exportLogs(
     @Query('level') level?: LogLevels,
@@ -114,21 +122,24 @@ export class LoggerController {
 
     if (format === 'csv') {
       // Convert to CSV format
-      const csvHeader = 'timestamp,level,message,service,version,environment,correlationId,component,requestId,userId,taskId,tags\n';
-      const csvRows = logs.map(log => [
-        log.timestamp,
-        log.level,
-        `"${log.message.replace(/"/g, '""')}"`, // Escape quotes
-        log.service,
-        log.version,
-        log.environment,
-        log.correlationId,
-        log.context?.component || '',
-        log.context?.requestId || '',
-        log.context?.userId || '',
-        log.context?.taskId || '',
-        `"${(log.context?.tags || []).join(';')}"`,
-      ].join(','));
+      const csvHeader =
+        'timestamp,level,message,service,version,environment,correlationId,component,requestId,userId,taskId,tags\n';
+      const csvRows = logs.map((log) =>
+        [
+          log.timestamp,
+          log.level,
+          `"${log.message.replace(/"/g, '""')}"`, // Escape quotes
+          log.service,
+          log.version,
+          log.environment,
+          log.correlationId,
+          log.context?.component || '',
+          log.context?.requestId || '',
+          log.context?.userId || '',
+          log.context?.taskId || '',
+          `"${(log.context?.tags || []).join(';')}"`,
+        ].join(','),
+      );
 
       return csvHeader + csvRows.join('\n');
     }
@@ -182,10 +193,14 @@ export class LoggerController {
       tags: ['test', 'warn'],
     });
 
-    this.loggerService.error('This is an error level test log', new Error('Test error'), {
-      component: 'TestController',
-      tags: ['test', 'error'],
-    });
+    this.loggerService.error(
+      'This is an error level test log',
+      new Error('Test error'),
+      {
+        component: 'TestController',
+        tags: ['test', 'error'],
+      },
+    );
 
     this.loggerService.critical('This is a critical level test log', {
       component: 'TestController',

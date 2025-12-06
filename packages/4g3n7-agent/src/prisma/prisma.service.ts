@@ -1,8 +1,16 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
@@ -13,7 +21,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         },
       },
       // Optimized connection pooling for AI workloads
-      log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+      log:
+        process.env.NODE_ENV === 'development'
+          ? ['query', 'info', 'warn', 'error']
+          : ['error'],
       errorFormat: 'pretty',
     });
   }
@@ -48,7 +59,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       return { status: 'healthy', timestamp: new Date().toISOString() };
     } catch (error) {
       this.logger.error('Database health check failed', error);
-      return { status: 'unhealthy', error: error.message, timestamp: new Date().toISOString() };
+      return {
+        status: 'unhealthy',
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      };
     }
   }
 
@@ -63,7 +78,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     where: any = {},
     orderBy: any = { createdAt: 'desc' },
     take: number = 50,
-    cursor?: string
+    cursor?: string,
   ) {
     const query: any = {
       where,

@@ -22,7 +22,11 @@ const defaultOptions: LogOptions = {
 export function LogMethod(options: LogOptions = {}) {
   const finalOptions = { ...defaultOptions, ...options };
 
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor,
+  ) {
     const originalMethod = descriptor.value;
     const className = target.constructor.name;
 
@@ -43,7 +47,11 @@ export function LogMethod(options: LogOptions = {}) {
       try {
         // Log method entry
         if (finalOptions.level) {
-          logger.logMethodEntry(methodName, finalOptions.includeArgs ? args : undefined, context);
+          logger.logMethodEntry(
+            methodName,
+            finalOptions.includeArgs ? args : undefined,
+            context,
+          );
         }
 
         const startTime = Date.now();
@@ -57,7 +65,11 @@ export function LogMethod(options: LogOptions = {}) {
 
         // Log method exit
         if (finalOptions.level) {
-          logger.logMethodExit(methodName, finalOptions.includeResult ? result : undefined, context);
+          logger.logMethodExit(
+            methodName,
+            finalOptions.includeResult ? result : undefined,
+            context,
+          );
         }
 
         return result;
@@ -80,14 +92,20 @@ export function LogMethod(options: LogOptions = {}) {
 }
 
 export function LogPerformance(operation?: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor,
+  ) {
     const originalMethod = descriptor.value;
     const className = target.constructor.name;
 
     descriptor.value = async function (...args: any[]) {
       const logger = (this as any).logger as LoggerService;
       if (!logger) {
-        console.warn('Logger not found in class, LogPerformance decorator will not work');
+        console.warn(
+          'Logger not found in class, LogPerformance decorator will not work',
+        );
         return originalMethod.apply(this, args);
       }
 
@@ -124,14 +142,20 @@ export function LogPerformance(operation?: string) {
 }
 
 export function LogErrors(component?: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor,
+  ) {
     const originalMethod = descriptor.value;
     const className = target.constructor.name;
 
     descriptor.value = async function (...args: any[]) {
       const logger = (this as any).logger as LoggerService;
       if (!logger) {
-        console.warn('Logger not found in class, LogErrors decorator will not work');
+        console.warn(
+          'Logger not found in class, LogErrors decorator will not work',
+        );
         return originalMethod.apply(this, args);
       }
 

@@ -51,21 +51,39 @@ export class PrismaReplicationService implements OnModuleInit {
     const config: DatabaseConfig = {
       primary: {
         url: this.configService.get<string>('DATABASE_URL'),
-        maxConnections: this.configService.get<number>('DATABASE_MAX_CONNECTIONS', 20),
+        maxConnections: this.configService.get<number>(
+          'DATABASE_MAX_CONNECTIONS',
+          20,
+        ),
       },
       replicas: [],
-      healthCheckInterval: this.configService.get<number>('DATABASE_HEALTH_CHECK_INTERVAL', 30000),
-      failoverTimeout: this.configService.get<number>('DATABASE_FAILOVER_TIMEOUT', 5000),
+      healthCheckInterval: this.configService.get<number>(
+        'DATABASE_HEALTH_CHECK_INTERVAL',
+        30000,
+      ),
+      failoverTimeout: this.configService.get<number>(
+        'DATABASE_FAILOVER_TIMEOUT',
+        5000,
+      ),
     };
 
     // Load replica configurations
-    const replicaUrls = this.configService.get<string>('DATABASE_REPLICA_URLS', '');
+    const replicaUrls = this.configService.get<string>(
+      'DATABASE_REPLICA_URLS',
+      '',
+    );
     if (replicaUrls) {
-      const urls = replicaUrls.split(',').map(url => url.trim());
+      const urls = replicaUrls.split(',').map((url) => url.trim());
       config.replicas = urls.map((url, index) => ({
         url,
-        maxConnections: this.configService.get<number>(`DATABASE_REPLICA_${index}_MAX_CONNECTIONS`, 10),
-        weight: this.configService.get<number>(`DATABASE_REPLICA_${index}_WEIGHT`, 1),
+        maxConnections: this.configService.get<number>(
+          `DATABASE_REPLICA_${index}_MAX_CONNECTIONS`,
+          10,
+        ),
+        weight: this.configService.get<number>(
+          `DATABASE_REPLICA_${index}_WEIGHT`,
+          1,
+        ),
       }));
     }
 
@@ -75,7 +93,9 @@ export class PrismaReplicationService implements OnModuleInit {
   async onModuleInit() {
     await this.initializeClients();
     this.startHealthChecks();
-    this.logger.log(`Prisma replication initialized with ${this.replicaClients.length} replicas`);
+    this.logger.log(
+      `Prisma replication initialized with ${this.replicaClients.length} replicas`,
+    );
   }
 
   private async initializeClients(): Promise<void> {
@@ -105,7 +125,10 @@ export class PrismaReplicationService implements OnModuleInit {
           this.replicaClients.push(client);
           this.logger.log(`Replica connected: ${replica.url}`);
         } catch (error) {
-          this.logger.error(`Failed to connect to replica ${replica.url}:`, error);
+          this.logger.error(
+            `Failed to connect to replica ${replica.url}:`,
+            error,
+          );
         }
       }
     }
@@ -156,7 +179,8 @@ export class PrismaReplicationService implements OnModuleInit {
 
     // Simple round-robin selection
     const client = this.replicaClients[this.currentReplicaIndex];
-    this.currentReplicaIndex = (this.currentReplicaIndex + 1) % this.replicaClients.length;
+    this.currentReplicaIndex =
+      (this.currentReplicaIndex + 1) % this.replicaClients.length;
 
     this.stats.readQueries++;
     this.stats.replicaQueries++;
@@ -181,7 +205,7 @@ export class PrismaReplicationService implements OnModuleInit {
 
   async query<T = any>(
     callback: (prisma: PrismaClient) => Promise<T>,
-    readOnly: boolean = false
+    readOnly: boolean = false,
   ): Promise<T> {
     const startTime = Date.now();
     const client = this.getClient(readOnly);
@@ -205,15 +229,18 @@ export class PrismaReplicationService implements OnModuleInit {
   }
 
   async transaction<T = any>(
-    callback: (prisma: PrismaClient) => Promise<T>
+    callback: (prisma: PrismaClient) => Promise<T>,
   ): Promise<T> {
     // Always use primary for transactions
     return await this.primaryClient.$transaction(callback);
   }
 
   private updateResponseTime(responseTime: number): void {
-    const totalResponseTime = this.stats.averageResponseTime * (this.stats.totalQueries - 1) + responseTime;
-    this.stats.averageResponseTime = totalResponseTime / this.stats.totalQueries;
+    const totalResponseTime =
+      this.stats.averageResponseTime * (this.stats.totalQueries - 1) +
+      responseTime;
+    this.stats.averageResponseTime =
+      totalResponseTime / this.stats.totalQueries;
   }
 
   getStats(): ReplicationStats {
@@ -268,10 +295,11 @@ export class PrismaReplicationService implements OnModuleInit {
     try {
       // Write test data to primary
       const testId = `test_${Date.now()}`;
-      await this.primaryClient.$executeRaw`INSERT INTO __test_replication (id, created_at) VALUES (${testId}, NOW())`;
+      await this.primaryClient
+        .$executeRaw`INSERT INTO __test_replication (id, created_at) VALUES (${testId}, NOW())`;
 
       // Wait a moment for replication
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Read from replica
       const replicaClient = this.getReadClient();
@@ -280,7 +308,8 @@ export class PrismaReplicationService implements OnModuleInit {
       `;
 
       // Clean up test data
-      await this.primaryClient.$executeRaw`DELETE FROM __test_replication WHERE id = ${testId}`;
+      await this.primaryClient
+        .$executeRaw`DELETE FROM __test_replication WHERE id = ${testId}`;
 
       if (result.length > 0) {
         const replicaTime = new Date(result[0].created_at).getTime();

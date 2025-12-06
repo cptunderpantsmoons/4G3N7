@@ -57,7 +57,12 @@ export class LoggingMiddleware implements NestMiddleware {
             contentLength: res.get('content-length'),
             responseTime: `${duration}ms`,
           },
-          tags: ['http', 'response', method.toLowerCase(), `status-${statusCode}`],
+          tags: [
+            'http',
+            'response',
+            method.toLowerCase(),
+            `status-${statusCode}`,
+          ],
         });
       } else if (statusCode >= 400) {
         this.logger.warn(`${method} ${url} - ${statusCode} (${duration}ms)`, {
@@ -73,7 +78,12 @@ export class LoggingMiddleware implements NestMiddleware {
             contentLength: res.get('content-length'),
             responseTime: `${duration}ms`,
           },
-          tags: ['http', 'response', method.toLowerCase(), `status-${statusCode}`],
+          tags: [
+            'http',
+            'response',
+            method.toLowerCase(),
+            `status-${statusCode}`,
+          ],
         });
       } else {
         this.logger.info(`${method} ${url} - ${statusCode} (${duration}ms)`, {
@@ -89,7 +99,12 @@ export class LoggingMiddleware implements NestMiddleware {
             contentLength: res.get('content-length'),
             responseTime: `${duration}ms`,
           },
-          tags: ['http', 'response', method.toLowerCase(), `status-${statusCode}`],
+          tags: [
+            'http',
+            'response',
+            method.toLowerCase(),
+            `status-${statusCode}`,
+          ],
         });
       }
 

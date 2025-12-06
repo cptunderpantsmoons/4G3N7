@@ -286,7 +286,9 @@ export class QwenService implements BytebotAgentService {
         case 'mcp_call':
         case 'mcp_list_tools':
         case 'mcp_approval_request':
-          this.logger.warn(`Unsupported response output item type: ${item.type}`);
+          this.logger.warn(
+            `Unsupported response output item type: ${item.type}`,
+          );
           contentBlocks.push({
             type: MessageContentType.Text,
             text: JSON.stringify(item),

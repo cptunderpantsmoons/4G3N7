@@ -47,18 +47,23 @@ export class FileMigrationService implements OnModuleInit {
     private readonly eventEmitter: EventEmitter2,
   ) {
     this.batchSize = this.configService.get<number>('MIGRATION_BATCH_SIZE', 50);
-    this.maxRetries = this.configService.get<number>('MIGRATION_MAX_RETRIES', 3);
+    this.maxRetries = this.configService.get<number>(
+      'MIGRATION_MAX_RETRIES',
+      3,
+    );
   }
 
   async onModuleInit() {
     this.logger.log('File migration service initialized');
   }
 
-  async startMigration(options: {
-    dryRun?: boolean;
-    fileTypes?: string[];
-    batchSize?: number;
-  } = {}): Promise<void> {
+  async startMigration(
+    options: {
+      dryRun?: boolean;
+      fileTypes?: string[];
+      batchSize?: number;
+    } = {},
+  ): Promise<void> {
     if (this.migrationInProgress) {
       throw new Error('Migration is already in progress');
     }
@@ -73,9 +78,13 @@ export class FileMigrationService implements OnModuleInit {
       this.eventEmitter.emit('migration.completed', result);
 
       if (result.success) {
-        this.logger.log(`Migration completed successfully: ${result.totalMigrated} files migrated in ${result.duration}ms`);
+        this.logger.log(
+          `Migration completed successfully: ${result.totalMigrated} files migrated in ${result.duration}ms`,
+        );
       } else {
-        this.logger.error(`Migration completed with errors: ${result.totalFailed} files failed`);
+        this.logger.error(
+          `Migration completed with errors: ${result.totalFailed} files failed`,
+        );
       }
     } catch (error) {
       this.logger.error('Migration failed', error);
@@ -89,7 +98,7 @@ export class FileMigrationService implements OnModuleInit {
   private async performMigration(
     dryRun: boolean,
     fileTypes?: string[],
-    batchSize: number
+    batchSize: number,
   ): Promise<MigrationResult> {
     const startTime = Date.now();
     const errors: string[] = [];
@@ -139,9 +148,15 @@ export class FileMigrationService implements OnModuleInit {
           processedFiles: totalMigrated + totalFailed,
           failedFiles: totalFailed,
           currentFile: file.name,
-          percentage: Math.round(((totalMigrated + totalFailed) / totalFiles) * 100),
+          percentage: Math.round(
+            ((totalMigrated + totalFailed) / totalFiles) * 100,
+          ),
           startTime: new Date(startTime),
-          estimatedTimeRemaining: this.calculateETA(startTime, totalMigrated + totalFailed, totalFiles),
+          estimatedTimeRemaining: this.calculateETA(
+            startTime,
+            totalMigrated + totalFailed,
+            totalFiles,
+          ),
         };
 
         this.eventEmitter.emit('migration.progress', progress);
@@ -201,7 +216,11 @@ export class FileMigrationService implements OnModuleInit {
     const objectKey = this.generateObjectKey(file);
 
     // Upload to object storage
-    await this.fileStorage.uploadFile(objectKey, buffer, file.content.media_type);
+    await this.fileStorage.uploadFile(
+      objectKey,
+      buffer,
+      file.content.media_type,
+    );
 
     // Update file record
     await this.prisma.file.update({
@@ -217,7 +236,9 @@ export class FileMigrationService implements OnModuleInit {
     });
 
     // Optionally clear base64 content to save database space
-    if (this.configService.get<boolean>('CLEAR_BASE64_AFTER_MIGRATION', false)) {
+    if (
+      this.configService.get<boolean>('CLEAR_BASE64_AFTER_MIGRATION', false)
+    ) {
       await this.prisma.file.update({
         where: { id: file.id },
         data: {
@@ -260,7 +281,11 @@ export class FileMigrationService implements OnModuleInit {
     return ext ? `.${ext}` : '';
   }
 
-  private calculateETA(startTime: number, processed: number, total: number): number {
+  private calculateETA(
+    startTime: number,
+    processed: number,
+    total: number,
+  ): number {
     if (processed === 0) return 0;
 
     const elapsed = Date.now() - startTime;
@@ -271,7 +296,7 @@ export class FileMigrationService implements OnModuleInit {
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   async getMigrationProgress(): Promise<MigrationProgress | null> {
@@ -285,7 +310,10 @@ export class FileMigrationService implements OnModuleInit {
       totalFiles: stats.total,
       processedFiles: stats.migrated + stats.failed,
       failedFiles: stats.failed,
-      percentage: stats.total > 0 ? Math.round(((stats.migrated + stats.failed) / stats.total) * 100) : 0,
+      percentage:
+        stats.total > 0
+          ? Math.round(((stats.migrated + stats.failed) / stats.total) * 100)
+          : 0,
       startTime: new Date(), // This should be stored in a better way
     };
   }
@@ -332,7 +360,9 @@ export class FileMigrationService implements OnModuleInit {
   }
 
   async rollbackMigration(): Promise<void> {
-    this.logger.warn('Starting migration rollback - this will remove object storage files');
+    this.logger.warn(
+      'Starting migration rollback - this will remove object storage files',
+    );
 
     const migratedFiles = await this.prisma.file.findMany({
       where: {
@@ -349,7 +379,10 @@ export class FileMigrationService implements OnModuleInit {
           await this.fileStorage.deleteFile(file.objectStorageKey);
         }
       } catch (error) {
-        this.logger.error(`Failed to delete object storage file ${file.objectStorageKey}:`, error);
+        this.logger.error(
+          `Failed to delete object storage file ${file.objectStorageKey}:`,
+          error,
+        );
       }
     }
 
