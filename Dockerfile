@@ -9,7 +9,9 @@ COPY packages/4g3n7-goose-bridge/package*.json ./packages/4g3n7-goose-bridge/
 COPY packages/4g3n7-goose-bridge/package-lock.json ./packages/4g3n7-goose-bridge/
 
 # Install dependencies
+WORKDIR /app/packages/4g3n7-goose-bridge
 RUN npm ci --prefer-offline --no-audit
+WORKDIR /app
 
 # Copy source code
 COPY packages/4g3n7-goose-bridge ./packages/4g3n7-goose-bridge/
@@ -28,7 +30,9 @@ COPY package*.json ./
 COPY packages/4g3n7-goose-bridge/package*.json ./packages/4g3n7-goose-bridge/
 COPY packages/4g3n7-goose-bridge/package-lock.json ./packages/4g3n7-goose-bridge/
 
+WORKDIR /app/packages/4g3n7-goose-bridge
 RUN npm ci --omit=dev --prefer-offline --no-audit
+WORKDIR /app
 
 # Copy built application from builder
 COPY --from=builder /app/packages/4g3n7-goose-bridge/dist ./packages/4g3n7-goose-bridge/dist
