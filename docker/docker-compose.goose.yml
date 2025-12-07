@@ -4,7 +4,7 @@ services:
   # Goose Bridge Service
   goose-bridge:
     build:
-      context: ./packages/4g3n7-goose-bridge
+      context: ../packages/4g3n7-goose-bridge
       dockerfile: Dockerfile
     container_name: 4g3n7-goose-bridge
     ports:

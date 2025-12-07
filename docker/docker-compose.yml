@@ -50,6 +50,7 @@ services:
       - G3N7_DESKTOP_BASE_URL=${G3N7_DESKTOP_BASE_URL:-http://4g3n7-desktop:9990}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOSE_API_URL=http://goose-agent:9993
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - NODE_ENV=production
     depends_on:
@@ -72,7 +73,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    restart: unless-stopped
 
   4g3n7-ui:
     build:
@@ -111,7 +111,22 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    restart: unless-stopped
+
+  goose-agent:
+    image: gooseai/goose-agent:latest
+    container_name: 4g3n7-goose
+    ports:
+      - "9993:9993"
+    environment:
+      - PRODUCTION=true
+      - LITELLM_EXTERNAL_LLM=anthropic
+      - LITELLM_EXTERNAL_LLM_API_KEY=${ANTHROPIC_API_KEY}
+      - MEMORY_STORE=postgres
+      - PG_CONNECTION_STRING=postgresql://postgres:postgres@postgres:5432/4g3n7db
+    networks:
+      - 4g3n7-network
+    depends_on:
+      - postgres
 
 networks:
   4g3n7-network:

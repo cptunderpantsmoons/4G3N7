@@ -10,9 +10,19 @@ import { ApiClientExtension } from '../extensions/api-client.extension';
 import { DocumentProcessorExtension } from '../extensions/document-processor.extension';
 import { WebScraperExtension } from '../extensions/web-scraper.extension';
 import { WorkflowExtension } from '../extensions/workflow.extension';
+import { BrowserAutomationExtension } from '../extensions/browser-automation.extension';
+import { OfficeAutomationExtension } from '../extensions/office-automation.extension';
+import { IDEAutomationExtension } from '../extensions/ide-automation.extension';
+import { CommsAutomationExtension } from '../extensions/comms-automation.extension';
+import { AppWorkflowExtension } from '../extensions/app-workflow.extension';
 import { ConfigService } from '@nestjs/config';
 import { CacheService } from './cache.service';
 import { WorkflowEngineService } from './workflow-engine.service';
+import { BrowserAutomationService } from './browser-automation.service';
+import { OfficeAutomationService } from './office-automation.service';
+import { IDEAutomationService } from './ide-automation.service';
+import { CommsAutomationService } from './comms-automation.service';
+import { AppWorkflowService } from './app-workflow.service';
 
 @Injectable()
 export class ExtensionLoaderService implements OnModuleInit {
@@ -24,6 +34,11 @@ export class ExtensionLoaderService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly cacheService: CacheService,
     private readonly workflowEngine: WorkflowEngineService,
+    private readonly browserService: BrowserAutomationService,
+    private readonly officeService: OfficeAutomationService,
+    private readonly ideService: IDEAutomationService,
+    private readonly commsService: CommsAutomationService,
+    private readonly appWorkflowService: AppWorkflowService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -49,6 +64,11 @@ export class ExtensionLoaderService implements OnModuleInit {
       this.createDocumentProcessorExtension(),
       this.createWebScraperExtension(),
       this.createWorkflowExtension(),
+      this.createBrowserAutomationExtension(),
+      this.createOfficeAutomationExtension(),
+      this.createIDEAutomationExtension(),
+      this.createCommsAutomationExtension(),
+      this.createAppWorkflowExtension(),
     ];
 
     for (const extension of extensions) {
@@ -171,5 +191,40 @@ export class ExtensionLoaderService implements OnModuleInit {
    */
   private createWorkflowExtension(): WorkflowExtension {
     return new WorkflowExtension();
+  }
+
+  /**
+   * Create Browser Automation Extension instance
+   */
+  private createBrowserAutomationExtension(): BrowserAutomationExtension {
+    return new BrowserAutomationExtension(this.browserService);
+  }
+
+  /**
+   * Create Office Automation Extension instance
+   */
+  private createOfficeAutomationExtension(): OfficeAutomationExtension {
+    return new OfficeAutomationExtension(this.officeService);
+  }
+
+  /**
+   * Create IDE Automation Extension instance
+   */
+  private createIDEAutomationExtension(): IDEAutomationExtension {
+    return new IDEAutomationExtension(this.ideService);
+  }
+
+  /**
+   * Create Communications Automation Extension instance
+   */
+  private createCommsAutomationExtension(): CommsAutomationExtension {
+    return new CommsAutomationExtension(this.commsService);
+  }
+
+  /**
+   * Create Application Workflow Extension instance
+   */
+  private createAppWorkflowExtension(): AppWorkflowExtension {
+    return new AppWorkflowExtension(this.appWorkflowService);
   }
 }

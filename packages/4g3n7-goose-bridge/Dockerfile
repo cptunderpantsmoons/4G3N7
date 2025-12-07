@@ -35,9 +35,6 @@ RUN npm ci --only=production && npm cache clean --force
 # Copy built application
 COPY --from=builder /app/dist ./dist
 
-# Copy configuration files if they exist
-COPY config/ ./config/ 2>/dev/null || true
-
 # Create necessary directories
 RUN mkdir -p /app/logs /app/data /app/extensions && \
     chown -R goose:goose /app

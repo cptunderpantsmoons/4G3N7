@@ -39,6 +39,11 @@ import { OCRService } from '../services/ocr.service';
 import { ElementDetectorService } from '../services/element-detector.service';
 import { LayoutAnalyzerService } from '../services/layout-analyzer.service';
 import { ChangeDetectorService } from '../services/change-detector.service';
+import { BrowserAutomationService } from '../services/browser-automation.service';
+import { OfficeAutomationService } from '../services/office-automation.service';
+import { IDEAutomationService } from '../services/ide-automation.service';
+import { CommsAutomationService } from '../services/comms-automation.service';
+import { AppWorkflowService } from '../services/app-workflow.service';
 
 @Module({
   imports: [
@@ -109,6 +114,11 @@ import { ChangeDetectorService } from '../services/change-detector.service';
     ElementDetectorService,
     LayoutAnalyzerService,
     ChangeDetectorService,
+    BrowserAutomationService,
+    OfficeAutomationService,
+    IDEAutomationService,
+    CommsAutomationService,
+    AppWorkflowService,
     PermissionService,
     ApiKeyService,
     AuditService,
