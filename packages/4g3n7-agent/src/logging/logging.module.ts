@@ -22,7 +22,7 @@ export class LoggingModule {
         {
           provide: LoggerService,
           useFactory: (configService: ConfigService) => {
-            const logger = new LoggerService(configService, null as any);
+            const logger = new LoggerService(configService);
 
             // Apply custom options
             if (options.maxLogsInMemory) {
@@ -56,7 +56,7 @@ export class LoggingModule {
           useFactory: async (...args: any[]) => {
             const configService = args[0] as ConfigService;
             const loggerOptions = await options.useFactory(...args);
-            const logger = new LoggerService(configService, null as any);
+            const logger = new LoggerService(configService);
 
             // Apply custom options
             if (loggerOptions.maxLogsInMemory) {

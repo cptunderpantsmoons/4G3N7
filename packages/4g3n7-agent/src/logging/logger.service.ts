@@ -1,4 +1,4 @@
-import { Injectable, LogLevel, ModuleRef, OnModuleInit } from '@nestjs/common';
+import { Injectable, LogLevel, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 
@@ -71,7 +71,6 @@ export class LoggerService implements OnModuleInit {
 
   constructor(
     private configService: ConfigService,
-    private moduleRef: ModuleRef,
   ) {
     this.environment = this.configService.get<string>(
       'NODE_ENV',
@@ -169,8 +168,6 @@ export class LoggerService implements OnModuleInit {
     if (context) {
       entry.context = {
         ...context,
-        // Generate correlation ID if not provided
-        correlationId: context?.requestId || randomUUID(),
       };
     }
 

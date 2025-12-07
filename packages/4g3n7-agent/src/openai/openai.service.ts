@@ -91,7 +91,6 @@ export class OpenAIService implements BytebotAgentService {
           errorName: error.name,
           errorCode: error.code,
           isReasoning,
-          maxTokens,
         },
         tags: ['openai', 'api-error', 'generate-message'],
       });

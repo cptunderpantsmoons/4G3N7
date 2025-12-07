@@ -47,7 +47,7 @@ export class AgentScheduler implements OnModuleInit {
         for (const file of task.files) {
           await writeFile({
             path: `/home/user/Desktop/${file.name}`,
-            content: file.data, // file.data is already base64 encoded in the database
+            content: file.data || '', // file.data is already base64 encoded in the database
           });
         }
       }

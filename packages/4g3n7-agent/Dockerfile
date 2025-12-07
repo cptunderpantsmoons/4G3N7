@@ -20,14 +20,14 @@ WORKDIR /app
 # Copy shared package first (better cache utilization)
 COPY ./shared /app/shared
 WORKDIR /app/shared
-RUN npm ci --only=production && npm run build
+RUN npm ci && npm run build
 
 # Copy agent package files
 COPY ./4g3n7-agent/package*.json /app/4g3n7-agent/
 WORKDIR /app/4g3n7-agent
 
 # Install agent dependencies
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy source code
 COPY ./4g3n7-agent/ .

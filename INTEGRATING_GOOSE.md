@@ -181,3 +181,4 @@ LOG_LEVEL=debug
 ## Example Integration
 
 See `/packages/4g3n7-agent/src/tasks/document-processing.task.ts` for a complete example of how to integrate Goose capabilities into 4g3n7 task workflows.
+

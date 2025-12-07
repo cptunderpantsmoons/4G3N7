@@ -93,9 +93,9 @@ export class AnthropicService implements BytebotAgentService {
         this.logger.log('Anthropic API call aborted');
         throw new BytebotAgentInterrupt();
       }
+      const errMsg = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `Error sending message to Anthropic: ${error.message}`,
-        error.stack,
+        `Error sending message to Anthropic: ${errMsg}`,
       );
       throw error;
     }
@@ -140,7 +140,7 @@ export class AnthropicService implements BytebotAgentService {
       }
 
       if (index === messages.length - 1) {
-        content[content.length - 1]['cache_control'] = {
+        (content[content.length - 1] as any)['cache_control'] = {
           type: 'ephemeral',
         };
       }

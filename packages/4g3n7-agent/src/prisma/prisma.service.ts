@@ -58,10 +58,11 @@ export class PrismaService
       await this.$queryRaw`SELECT 1`;
       return { status: 'healthy', timestamp: new Date().toISOString() };
     } catch (error) {
-      this.logger.error('Database health check failed', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error('Database health check failed');
       return {
         status: 'unhealthy',
-        error: error.message,
+        error: errorMessage,
         timestamp: new Date().toISOString(),
       };
     }
@@ -69,7 +70,9 @@ export class PrismaService
 
   // Bulk operations with transaction support
   async bulkTransaction<T>(operations: (() => Promise<T>)[]) {
-    return await this.$transaction(operations);
+    return await this.$transaction((ops: any) => {
+      return Promise.all(ops.map((op: any) => op()));
+    });
   }
 
   // Optimized query for large datasets
@@ -91,6 +94,6 @@ export class PrismaService
       query.skip = 1; // Skip the cursor item
     }
 
-    return await this[model].findMany(query);
+    return await (this[model] as any).findMany(query);
   }
 }

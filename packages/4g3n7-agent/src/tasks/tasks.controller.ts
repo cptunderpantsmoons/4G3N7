@@ -100,11 +100,12 @@ export class TasksController {
 
         return models;
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         if (error instanceof HttpException) {
           throw error;
         }
         throw new HttpException(
-          `Error fetching models: ${error.message}`,
+          `Error fetching models: ${errorMessage}`,
           HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
@@ -173,12 +174,13 @@ export class TasksController {
         }),
       );
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       if (error instanceof HttpException) {
         throw error;
       }
 
       throw new HttpException(
-        `Error fetching OpenRouter models: ${error.message}`,
+        `Error fetching OpenRouter models: ${errorMessage}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

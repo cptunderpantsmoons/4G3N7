@@ -29,7 +29,7 @@ export interface ReplicationStats {
 @Injectable()
 export class PrismaReplicationService implements OnModuleInit {
   private readonly logger = new Logger(PrismaReplicationService.name);
-  private primaryClient: PrismaClient;
+  private primaryClient!: PrismaClient;
   private replicaClients: PrismaClient[] = [];
   private currentReplicaIndex = 0;
   private config: DatabaseConfig;
@@ -48,9 +48,13 @@ export class PrismaReplicationService implements OnModuleInit {
   }
 
   private loadConfig(): DatabaseConfig {
+    const databaseUrl = this.configService.get<string>('DATABASE_URL');
+    if (!databaseUrl) {
+      throw new Error('DATABASE_URL environment variable is required');
+    }
     const config: DatabaseConfig = {
       primary: {
-        url: this.configService.get<string>('DATABASE_URL'),
+        url: databaseUrl,
         maxConnections: this.configService.get<number>(
           'DATABASE_MAX_CONNECTIONS',
           20,
@@ -232,7 +236,7 @@ export class PrismaReplicationService implements OnModuleInit {
     callback: (prisma: PrismaClient) => Promise<T>,
   ): Promise<T> {
     // Always use primary for transactions
-    return await this.primaryClient.$transaction(callback);
+    return (await this.primaryClient.$transaction((tx) => callback(tx as PrismaClient))) as T;
   }
 
   private updateResponseTime(responseTime: number): void {

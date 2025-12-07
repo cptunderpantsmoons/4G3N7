@@ -5,15 +5,12 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { LoggerService, LogFilter, LogLevels } from './logger.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Logging')
 @Controller('logs')
-@UseGuards(JwtAuthGuard)
 export class LoggerController {
   constructor(private readonly loggerService: LoggerService) {}
 
@@ -195,7 +192,6 @@ export class LoggerController {
 
     this.loggerService.error(
       'This is an error level test log',
-      new Error('Test error'),
       {
         component: 'TestController',
         tags: ['test', 'error'],

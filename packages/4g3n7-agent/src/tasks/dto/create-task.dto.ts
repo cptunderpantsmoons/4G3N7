@@ -13,25 +13,25 @@ import { Role, TaskPriority, TaskType } from '@prisma/client';
 export class TaskFileDto {
   @IsNotEmpty()
   @IsString()
-  name: string;
+  name!: string;
 
   @IsNotEmpty()
   @IsString()
-  base64: string;
+  base64!: string;
 
   @IsNotEmpty()
   @IsString()
-  type: string;
+  type!: string;
 
   @IsNotEmpty()
   @IsNumber()
-  size: number;
+  size!: number;
 }
 
 export class CreateTaskDto {
   @IsNotEmpty()
   @IsString()
-  description: string;
+  description!: string;
 
   @IsOptional()
   @IsString()

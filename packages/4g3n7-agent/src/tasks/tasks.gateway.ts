@@ -18,7 +18,7 @@ import { LoggerService } from '../logging/logger.service';
 })
 export class TasksGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   constructor(private readonly logger: LoggerService) {}
 
@@ -31,10 +31,11 @@ export class TasksGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
+    const disconnectReason = (client as any).disconnected ? 'closed' : 'unknown';
     this.logger.logWebSocketEvent('client_disconnected', client.id, {
       component: 'TasksGateway',
       method: 'handleDisconnect',
-      metadata: { reason: client.disconnectedReason },
+      metadata: { reason: disconnectReason },
     });
   }
 

@@ -97,8 +97,9 @@ export class PerformanceController {
         },
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
-        error: error.message,
+        error: errorMessage,
         timestamp: new Date().toISOString(),
         responseTime: `${Date.now() - startTime}ms`,
       };
@@ -203,8 +204,9 @@ export class PerformanceController {
         analytics,
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
-        error: error.message,
+        error: errorMessage,
         timestamp: new Date().toISOString(),
       };
     }

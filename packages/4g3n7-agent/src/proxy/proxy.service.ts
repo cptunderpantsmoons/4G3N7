@@ -205,11 +205,11 @@ export class ProxyService implements BytebotAgentService {
             }
             case MessageContentType.Thinking: {
               const thinkingBlock = block as ThinkingContentBlock;
-              const message: ChatCompletionMessageParam = {
+              const message: ChatCompletionMessageParam & { reasoning_content?: string } = {
                 role: 'assistant',
                 content: null,
               };
-              message['reasoning_content'] = thinkingBlock.thinking;
+              message.reasoning_content = thinkingBlock.thinking;
               chatMessages.push(message);
               break;
             }
@@ -282,11 +282,12 @@ export class ProxyService implements BytebotAgentService {
       } as TextContentBlock);
     }
 
-    if (message['reasoning_content']) {
+    const reasoningContent = (message as any)['reasoning_content'];
+    if (reasoningContent) {
       contentBlocks.push({
         type: MessageContentType.Thinking,
-        thinking: message['reasoning_content'],
-        signature: message['reasoning_content'],
+        thinking: reasoningContent,
+        signature: reasoningContent,
       } as ThinkingContentBlock);
     }
 

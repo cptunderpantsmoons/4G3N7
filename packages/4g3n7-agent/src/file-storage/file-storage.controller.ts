@@ -39,7 +39,7 @@ export class FileStorageController {
   @ApiConsumes('multipart/form-data')
   @ApiResponse({ status: 200, description: 'File uploaded successfully' })
   async uploadFile(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Body('taskId') taskId: string,
     @Body('type') type: string = 'attachment',
   ) {
@@ -65,7 +65,7 @@ export class FileStorageController {
       };
     } catch (error) {
       throw new InternalServerErrorException(
-        `Failed to upload file: ${error.message}`,
+        `Failed to upload file: ${(error as any).message}`,
       );
     }
   }
@@ -114,7 +114,7 @@ export class FileStorageController {
       };
     } catch (error) {
       throw new InternalServerErrorException(
-        `Failed to upload file: ${error.message}`,
+        `Failed to upload file: ${(error as any).message}`,
       );
     }
   }
@@ -134,7 +134,7 @@ export class FileStorageController {
       res.send(buffer);
     } catch (error) {
       throw new InternalServerErrorException(
-        `Failed to get file: ${error.message}`,
+        `Failed to get file: ${(error as any).message}`,
       );
     }
   }
@@ -159,7 +159,7 @@ export class FileStorageController {
       };
     } catch (error) {
       throw new InternalServerErrorException(
-        `Failed to generate signed URL: ${error.message}`,
+        `Failed to generate signed URL: ${(error as any).message}`,
       );
     }
   }
@@ -178,7 +178,7 @@ export class FileStorageController {
       };
     } catch (error) {
       throw new InternalServerErrorException(
-        `Failed to delete file: ${error.message}`,
+        `Failed to delete file: ${(error as any).message}`,
       );
     }
   }
@@ -205,7 +205,7 @@ export class FileStorageController {
       };
     } catch (error) {
       throw new InternalServerErrorException(
-        `Failed to start migration: ${error.message}`,
+        `Failed to start migration: ${(error as any).message}`,
       );
     }
   }
@@ -225,7 +225,7 @@ export class FileStorageController {
       };
     } catch (error) {
       throw new InternalServerErrorException(
-        `Failed to get migration progress: ${error.message}`,
+        `Failed to get migration progress: ${(error as any).message}`,
       );
     }
   }
@@ -243,7 +243,7 @@ export class FileStorageController {
       };
     } catch (error) {
       throw new InternalServerErrorException(
-        `Failed to get migration stats: ${error.message}`,
+        `Failed to get migration stats: ${(error as any).message}`,
       );
     }
   }
@@ -262,7 +262,7 @@ export class FileStorageController {
       };
     } catch (error) {
       throw new InternalServerErrorException(
-        `Failed to rollback migration: ${error.message}`,
+        `Failed to rollback migration: ${(error as any).message}`,
       );
     }
   }

@@ -136,8 +136,17 @@ export class TasksOptimizedService {
         status: true,
         model: true,
         type: true,
+        control: true,
+        createdAt: true,
+        updatedAt: true,
+        executedAt: true,
+        completedAt: true,
+        error: true,
+        createdBy: true,
+        queuedAt: true,
+        result: true,
       },
-    });
+    }) as Promise<Task[]>;
   }
 
   async findNextTask(): Promise<(Task & { files: File[] }) | null> {
@@ -228,6 +237,8 @@ export class TasksOptimizedService {
           model: true,
           error: true,
           createdBy: true,
+          queuedAt: true,
+          result: true,
         },
       }),
       this.prisma.task.count({ where: whereClause }),
@@ -261,17 +272,7 @@ export class TasksOptimizedService {
         error: true,
         createdBy: true,
         queuedAt: true,
-        // Only include files when needed
-        files: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            size: true,
-            createdAt: true,
-            // Exclude 'data' field for performance
-          },
-        },
+        result: true,
       },
     });
 
@@ -318,8 +319,10 @@ export class TasksOptimizedService {
         model: true,
         error: true,
         createdBy: true,
+        queuedAt: true,
+        result: true,
       },
-    });
+    }) as unknown as Task;
 
     if (updateTaskDto.status === TaskStatus.COMPLETED) {
       this.eventEmitter.emit('task.completed', { taskId: id });
@@ -340,7 +343,7 @@ export class TasksOptimizedService {
     taskId: string,
     page = 1,
     limit = 20,
-  ): Promise<{ files: File[]; total: number }> {
+  ): Promise<{ files: any[]; total: number }> {
     const skip = (page - 1) * limit;
 
     const [files, total] = await Promise.all([
@@ -353,7 +356,10 @@ export class TasksOptimizedService {
           size: true,
           createdAt: true,
           updatedAt: true,
-          // Exclude data field for listing
+          taskId: true,
+          data: true,
+          objectStorageKey: true,
+          objectStorageSize: true,
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -419,7 +425,7 @@ export class TasksOptimizedService {
 
   async addTaskMessage(taskId: string, addTaskMessageDto: AddTaskMessageDto) {
     const task = await this.prisma.task.findUnique({
-      where: { taskId },
+      where: { id: taskId },
       select: { id: true },
     });
 

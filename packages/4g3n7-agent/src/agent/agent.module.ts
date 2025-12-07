@@ -8,7 +8,7 @@ import { AgentScheduler } from './agent.scheduler';
 import { InputCaptureService } from './input-capture.service';
 import { OpenAIModule } from '../openai/openai.module';
 import { GoogleModule } from '../google/google.module';
-import { SummariesModule } from 'src/summaries/summaries.modue';
+import { SummariesModule } from 'src/summaries/summaries.module';
 import { AgentAnalyticsService } from './agent.analytics';
 import { ProxyModule } from 'src/proxy/proxy.module';
 import { OpenRouterModule } from 'src/openrouter/openrouter.module';

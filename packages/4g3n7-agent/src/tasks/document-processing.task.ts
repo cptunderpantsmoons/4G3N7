@@ -20,10 +20,11 @@ export class DocumentProcessingTask {
 
       // Store key information in memory for future reference
       if (result.extracted) {
+        const extension = filePath.split('.').pop() || 'unknown';
         await goose.rememberMemory(
           `Document processed: ${filePath} -> ${JSON.stringify(result.extracted)}`,
           'document_processing',
-          ['finance', 'automation', filePath.split('.').pop()]
+          ['finance', 'automation', extension]
         );
       }
 
@@ -37,10 +38,11 @@ export class DocumentProcessingTask {
       };
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Document processing failed for ${filePath}`, error);
       return {
         success: false,
-        error: error.message,
+        error: errorMessage,
         filePath,
         action,
         timestamp: new Date().toISOString()
@@ -68,3 +70,4 @@ export class DocumentProcessingTask {
     });
   }
 }
+

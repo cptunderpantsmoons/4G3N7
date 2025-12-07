@@ -47,11 +47,11 @@ export function gooseRateLimitMiddleware(req: Request, res: Response, next: Next
   const windowMs = 60 * 1000; // 1 minute
   const maxRequests = 100; // requests per minute
 
-  if (!global.gooseRateLimit) {
-    global.gooseRateLimit = new Map();
+  if (!(global as any).gooseRateLimit) {
+    (global as any).gooseRateLimit = new Map();
   }
 
-  const rateLimitMap = global.gooseRateLimit as Map<string, { count: number; resetTime: number }>;
+  const rateLimitMap = (global as any).gooseRateLimit as Map<string, { count: number; resetTime: number }>;
   const clientData = rateLimitMap.get(clientId);
 
   if (!clientData || now > clientData.resetTime) {
@@ -68,3 +68,4 @@ export function gooseRateLimitMiddleware(req: Request, res: Response, next: Next
 
   next();
 }
+

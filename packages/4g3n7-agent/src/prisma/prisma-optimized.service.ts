@@ -21,14 +21,14 @@ export class PrismaOptimizedService
     });
 
     // Initialize logger for database operations
-    this.logger = new LoggerService(null as any, null as any);
+    this.logger = new LoggerService(null as any) as any;
   }
 
   async onModuleInit() {
     await this.$connect();
 
     // Optimize connection pool
-    this.$on('beforeExit', async () => {
+    (this.$on as any)('beforeExit', async () => {
       this.logger.info('Prisma client is disconnecting...', {
         component: 'PrismaOptimizedService',
         tags: ['database', 'lifecycle'],
@@ -36,7 +36,7 @@ export class PrismaOptimizedService
     });
 
     // Monitor slow queries
-    this.$on('query', (e) => {
+    (this.$on as any)('query', (e: any) => {
       if (e.duration > 1000) {
         // Log queries taking longer than 1 second
         this.logger.warn(`Slow Query detected`, {
@@ -75,14 +75,14 @@ export class PrismaOptimizedService
   ): Promise<T[]> {
     if (createData.length === 0) return [];
 
-    return this.$transaction(async (tx) => {
+    return this.$transaction(async (tx: any) => {
       // Create in batches to avoid memory issues
       const batchSize = 100;
       const results: T[] = [];
 
       for (let i = 0; i < createData.length; i += batchSize) {
         const batch = createData.slice(i, i + batchSize);
-        const batchResults = await tx[model].createMany({
+        const batchResults = await (tx[model] as any).createMany({
           data: batch,
           skipDuplicates: true,
         });
@@ -107,7 +107,7 @@ export class PrismaOptimizedService
   ): Promise<{ data: T[]; nextCursor?: string; hasMore: boolean }> {
     const { cursor, take = 50, ...rest } = options;
 
-    const data = await this[model].findMany({
+    const data = await (this[model] as any).findMany({
       ...rest,
       ...(cursor ? { cursor: { id: cursor } } : {}),
       take: take + 1, // Take one extra to determine if there's more data
@@ -160,7 +160,7 @@ export class PrismaOptimizedService
       `;
 
       // Determine health status
-      const activeConnections = connectionStats.find(
+      const activeConnections = (connectionStats as any).find(
         (s: any) => s.state === 'active',
       );
       const isHealthy =
@@ -169,10 +169,15 @@ export class PrismaOptimizedService
       return {
         status: isHealthy ? 'healthy' : 'degraded',
         connectionPool: connectionStats,
-        databaseStats: dbStats[0],
+        databaseStats: (dbStats as any)[0],
       };
     } catch (error) {
-      this.logger.error('Database health check failed:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error('Database health check failed:', {
+        component: 'PrismaOptimizedService',
+        metadata: { errorMessage },
+        tags: ['database', 'error'],
+      });
       return {
         status: 'unhealthy',
         connectionPool: null,
@@ -186,7 +191,7 @@ export class PrismaOptimizedService
     model: string,
     where: any,
   ): Promise<{ count: number }> {
-    return this.$transaction(async (tx) => {
+    return this.$transaction(async (tx: any) => {
       // Mark as deleted instead of actually deleting
       const result = await tx[model].updateMany({
         where,
@@ -238,9 +243,9 @@ export class PrismaOptimizedService
       fileRetentionDays = 30,
     } = options;
 
-    return this.$transaction(async (tx) => {
+    return this.$transaction(async (tx: any) => {
       // Delete old completed tasks
-      const tasksDeleted = await tx.task.deleteMany({
+      const tasksDeleted = await (tx as any).task.deleteMany({
         where: {
           status: 'COMPLETED',
           completedAt: {

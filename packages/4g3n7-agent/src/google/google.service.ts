@@ -104,12 +104,12 @@ export class GoogleService implements BytebotAgentService {
         },
       };
     } catch (error) {
-      if (error.message.includes('AbortError')) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('AbortError')) {
         throw new BytebotAgentInterrupt();
       }
       this.logger.error(
-        `Error sending message to Google Gemini: ${error.message}`,
-        error.stack,
+        `Error sending message to Google Gemini: ${errorMessage}`,
       );
       throw error;
     }

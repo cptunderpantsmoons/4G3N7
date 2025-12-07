@@ -129,7 +129,7 @@ export function LogPerformance(operation?: string) {
         logger.logPerformance(operationName, duration, {
           method: propertyKey,
           component: className,
-          error: error instanceof Error ? error.message : String(error),
+          metadata: { error: error instanceof Error ? error.message : String(error) },
           tags: ['performance', 'method', 'error'],
         });
 

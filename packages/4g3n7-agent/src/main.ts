@@ -89,7 +89,7 @@ async function bootstrap() {
     });
 
     // Add request timeout
-    app.use((req, res, next) => {
+    app.use((req: any, res: any, next: any) => {
       res.setTimeout(30000, () => {
         logger.warn(`Request timeout for ${req.method} ${req.url}`);
         if (!res.headersSent) {

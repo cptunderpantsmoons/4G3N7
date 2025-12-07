@@ -43,7 +43,7 @@ export async function handleComputerToolUse(
 ): Promise<ToolResultContentBlock> {
   // Initialize the structured logger if not already done
   if (!computerLogger) {
-    computerLogger = new LoggerService(null as any, null as any);
+    computerLogger = new LoggerService(null as any);
   }
   logger.debug(
     `Handling computer tool use: ${block.name}, tool_use_id: ${block.id}`,
@@ -274,7 +274,7 @@ async function moveMouse(input: { coordinates: Coordinates }): Promise<void> {
     });
   } catch (error) {
     const { message } = getErrorInfo(error);
-    computerLogger.error('Error in move_mouse action:', message);
+    computerLogger.error('Error in move_mouse action:', { metadata: { message } });
     throw error;
   }
 }
@@ -300,7 +300,7 @@ async function traceMouse(input: {
     });
   } catch (error) {
     const { message } = getErrorInfo(error);
-    computerLogger.error('Error in trace_mouse action:', message);
+    computerLogger.error('Error in trace_mouse action:', { metadata: { message } });
     throw error;
   }
 }
@@ -330,7 +330,7 @@ async function clickMouse(input: {
     });
   } catch (error) {
     const { message } = getErrorInfo(error);
-    computerLogger.error('Error in click_mouse action:', message);
+    computerLogger.error('Error in click_mouse action:', { metadata: { message } });
     throw error;
   }
 }
@@ -358,7 +358,7 @@ async function pressMouse(input: {
     });
   } catch (error) {
     const { message } = getErrorInfo(error);
-    computerLogger.error('Error in press_mouse action:', message);
+    computerLogger.error('Error in press_mouse action:', { metadata: { message } });
     throw error;
   }
 }
@@ -386,7 +386,7 @@ async function dragMouse(input: {
     });
   } catch (error) {
     const { message } = getErrorInfo(error);
-    computerLogger.error('Error in drag_mouse action:', message);
+    computerLogger.error('Error in drag_mouse action:', { metadata: { message } });
     throw error;
   }
 }
@@ -416,7 +416,7 @@ async function scroll(input: {
     });
   } catch (error) {
     const { message } = getErrorInfo(error);
-    computerLogger.error('Error in scroll action:', message);
+    computerLogger.error('Error in scroll action:', { metadata: { message } });
     throw error;
   }
 }
@@ -440,7 +440,7 @@ async function typeKeys(input: {
     });
   } catch (error) {
     const { message } = getErrorInfo(error);
-    computerLogger.error('Error in type_keys action:', message);
+    computerLogger.error('Error in type_keys action:', { metadata: { message } });
     throw error;
   }
 }
@@ -464,7 +464,7 @@ async function pressKeys(input: {
     });
   } catch (error) {
     const { message } = getErrorInfo(error);
-    computerLogger.error('Error in press_keys action:', message);
+    computerLogger.error('Error in press_keys action:', { metadata: { message } });
     throw error;
   }
 }
@@ -488,7 +488,7 @@ async function typeText(input: {
     });
   } catch (error) {
     const { message } = getErrorInfo(error);
-    computerLogger.error('Error in type_text action:', message);
+    computerLogger.error('Error in type_text action:', { metadata: { message } });
     throw error;
   }
 }
@@ -508,7 +508,7 @@ async function pasteText(input: { text: string }): Promise<void> {
     });
   } catch (error) {
     const { message } = getErrorInfo(error);
-    computerLogger.error('Error in paste_text action:', message);
+    computerLogger.error('Error in paste_text action:', { metadata: { message } });
     throw error;
   }
 }
@@ -528,7 +528,7 @@ async function wait(input: { duration: number }): Promise<void> {
     });
   } catch (error) {
     const { message } = getErrorInfo(error);
-    computerLogger.error('Error in wait action:', message);
+    computerLogger.error('Error in wait action:', { metadata: { message } });
     throw error;
   }
 }
@@ -549,7 +549,7 @@ async function cursorPosition(): Promise<Coordinates> {
     return { x: data.x, y: data.y };
   } catch (error) {
     const { message } = getErrorInfo(error);
-    computerLogger.error('Error in cursor_position action:', message);
+    computerLogger.error('Error in cursor_position action:', { metadata: { message } });
     throw error;
   }
 }
@@ -580,7 +580,8 @@ async function screenshot(): Promise<string> {
 
     return data.image; // Base64 encoded image
   } catch (error) {
-    computerLogger.error('Error in screenshot action:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    computerLogger.error('Error in screenshot action:', { metadata: { message: errorMsg } });
     throw error;
   }
 }
@@ -599,7 +600,8 @@ async function application(input: { application: string }): Promise<void> {
       }),
     });
   } catch (error) {
-    computerLogger.error('Error in application action:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    computerLogger.error('Error in application action:', { metadata: { message: errorMsg } });
     throw error;
   }
 }
@@ -632,10 +634,11 @@ async function readFile(input: { path: string }): Promise<{
     const data = await response.json();
     return data;
   } catch (error) {
-    computerLogger.error('Error in read_file action:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    computerLogger.error('Error in read_file action:', { metadata: { message: errorMsg } });
     return {
       success: false,
-      message: `Error reading file: ${error.message}`,
+      message: `Error reading file: ${errorMsg}`,
     };
   }
 }
@@ -668,10 +671,11 @@ export async function writeFile(input: {
     const data = await response.json();
     return data;
   } catch (error) {
-    computerLogger.error('Error in write_file action:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    computerLogger.error('Error in write_file action:', { metadata: { message: errorMsg } });
     return {
       success: false,
-      message: `Error writing file: ${error.message}`,
+      message: `Error writing file: ${errorMsg}`,
     };
   }
 }
