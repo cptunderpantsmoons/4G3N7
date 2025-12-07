@@ -80,7 +80,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/4g3n7-ui/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/4g3n7-ui/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/4g3n7-ui/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/4g3n7-ui/package.json ./package.json
-COPY --from=builder --chown=nextjs:nodejs /app/4g3n7-ui/server.js ./server.js 2>/dev/null || true
 
 # Switch to non-root user
 USER nextjs
@@ -93,6 +92,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD node -e "require('http').get('http://localhost:9992/', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
 
 # Run the application
-CMD ["npm", "run", "start"] 
+CMD ["node", "server.js"] 
 
 

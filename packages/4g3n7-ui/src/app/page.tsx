@@ -17,10 +17,8 @@ import { TaskList } from "@/components/tasks/TaskList";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   SecurityValidationIcon,
-  CpuBoltIcon,
   Target02Icon,
-  Nodes3Icon,
-  ChartSuccessIcon,
+  NoodlesIcon,
 } from "@hugeicons/core-free-icons";
 import Link from "next/link";
 
@@ -30,6 +28,9 @@ interface FileWithBase64 {
   type: string;
   size: number;
 }
+
+const CpuBoltIcon = SecurityValidationIcon;
+const ChartSuccessIcon = NoodlesIcon;
 
 const FeatureCard = ({
   title,
@@ -276,7 +277,7 @@ export default function Home() {
               </h2>
             </div>
             <div className="flex items-center gap-2 rounded-full border border-[var(--border)]/70 bg-[rgba(255,255,255,0.04)] px-4 py-2 text-xs text-[var(--foreground)]">
-              <HugeiconsIcon icon={Nodes3Icon} className="h-4 w-4 text-[var(--color-4g3n7-ice)]" />
+              <HugeiconsIcon icon={NoodlesIcon} className="h-4 w-4 text-[var(--color-4g3n7-ice)]" />
               Modular · Secure · Observable
             </div>
           </div>

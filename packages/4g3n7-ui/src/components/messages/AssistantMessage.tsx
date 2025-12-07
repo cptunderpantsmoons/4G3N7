@@ -136,9 +136,10 @@ export const AssistantMessage = React.memo(function AssistantMessage({
 }, (prevProps, nextProps) => {
   // Custom comparison function for optimal re-rendering
   return (
-    prevProps.group.id === nextProps.group.id &&
+    prevProps.group.role === nextProps.group.role &&
     prevProps.taskStatus === nextProps.taskStatus &&
     prevProps.messageIdToIndex === nextProps.messageIdToIndex &&
-    prevProps.group.take_over === nextProps.group.take_over
+    prevProps.group.take_over === nextProps.group.take_over &&
+    prevProps.group.messages.length === nextProps.group.messages.length
   );
 });

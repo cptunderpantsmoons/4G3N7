@@ -32,8 +32,7 @@ export function useWebSocket({
     }
 
     // Connect to the WebSocket server with optimized configuration
-    const socket = io({
-      path: "/api/proxy/tasks",
+    const socket = io("/api/proxy/tasks", {
       transports: ["websocket", "polling"], // Fallback to polling
       autoConnect: true,
       reconnection: true,
@@ -44,9 +43,7 @@ export function useWebSocket({
       forceNew: true,
       // Add compression for better performance
       perMessageDeflate: {
-        zlibDeflateOptions: {
-          level: 3,
-        },
+        threshold: 1024,
       },
     });
 

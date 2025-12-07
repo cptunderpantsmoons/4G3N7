@@ -87,7 +87,7 @@ export const UserMessage = React.memo(
     );
   },
   (prevProps, nextProps) =>
-    prevProps.group.id === nextProps.group.id &&
+    prevProps.group.role === nextProps.group.role &&
     prevProps.messageIdToIndex === nextProps.messageIdToIndex &&
     prevProps.group.messages.length === nextProps.group.messages.length,
 );
