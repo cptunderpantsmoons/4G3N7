@@ -25,7 +25,7 @@ export class ConfigurationService {
     this.ajv = new Ajv({
       allErrors: true,
       useDefaults: true,
-      coerceTypes: true,
+      coerceTypes: false,
     });
   }
 

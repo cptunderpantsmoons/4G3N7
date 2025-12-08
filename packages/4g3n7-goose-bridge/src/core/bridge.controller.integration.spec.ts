@@ -7,13 +7,15 @@ describe('BridgeController (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
+    process.env.REDIS_URL = 'redis://localhost:6379/test';
+    
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [GooseBridgeModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
-  });
+  }, 30000);
 
   afterAll(async () => {
     await app.close();
@@ -67,4 +69,3 @@ describe('BridgeController (e2e)', () => {
     });
   });
 });
-

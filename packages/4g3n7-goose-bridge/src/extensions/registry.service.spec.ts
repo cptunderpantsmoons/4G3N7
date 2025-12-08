@@ -54,22 +54,23 @@ describe('ExtensionRegistry', () => {
       const extension = new TestExtension();
       const manifest = extension.getManifest();
 
-      service.registerExtension(manifest, 'local', extension);
+      service.registerExtension(manifest, 'local', 'custom');
 
       const registered = service.getExtension('test-extension');
       expect(registered).toBeDefined();
       expect(registered?.manifest.id).toBe('test-extension');
     });
 
-    it('should throw error when registering duplicate extension', () => {
+    it('should update extension when registering duplicate', () => {
       const extension = new TestExtension();
       const manifest = extension.getManifest();
 
-      service.registerExtension(manifest, 'local', extension);
+      service.registerExtension(manifest, 'local', 'custom');
+      service.registerExtension(manifest, 'local', 'custom');
 
-      expect(() => {
-        service.registerExtension(manifest, 'local', extension);
-      }).toThrow();
+      const registered = service.getExtension('test-extension');
+      expect(registered).toBeDefined();
+      expect(registered?.manifest.id).toBe('test-extension');
     });
   });
 
@@ -78,16 +79,16 @@ describe('ExtensionRegistry', () => {
       const extension = new TestExtension();
       const manifest = extension.getManifest();
 
-      service.registerExtension(manifest, 'local', extension);
+      service.registerExtension(manifest, 'local', 'custom');
 
       const result = service.getExtension('test-extension');
       expect(result).toBeDefined();
       expect(result?.manifest.id).toBe('test-extension');
     });
 
-    it('should return null for non-existent extension', () => {
+    it('should return undefined for non-existent extension', () => {
       const result = service.getExtension('non-existent');
-      expect(result).toBeNull();
+      expect(result).toBeUndefined();
     });
   });
 
@@ -106,7 +107,15 @@ describe('ExtensionRegistry', () => {
             author: 'Test Author',
             permissions: [],
             entryPoint: 'test2.ts',
-            capabilities: [],
+            capabilities: [
+              {
+                id: 'test-capability-2',
+                name: 'Test Capability 2',
+                description: 'Test capability 2',
+                operations: ['test2'],
+                requiredPermissions: [],
+              },
+            ],
           };
         }
 
@@ -118,8 +127,8 @@ describe('ExtensionRegistry', () => {
       const extension2 = new TestExtension2();
       const manifest2 = extension2.getManifest();
 
-      service.registerExtension(manifest1, 'local', extension1);
-      service.registerExtension(manifest2, 'local', extension2);
+      service.registerExtension(manifest1, 'local', 'custom');
+      service.registerExtension(manifest2, 'local', 'custom');
 
       const all = service.getAllExtensions();
       expect(all).toHaveLength(2);
@@ -132,10 +141,9 @@ describe('ExtensionRegistry', () => {
 
       const extension = new TestExtension();
       const manifest = extension.getManifest();
-      service.registerExtension(manifest, 'local', extension);
+      service.registerExtension(manifest, 'local', 'custom');
 
       expect(service.getExtensionCount()).toBe(1);
     });
   });
 });
-

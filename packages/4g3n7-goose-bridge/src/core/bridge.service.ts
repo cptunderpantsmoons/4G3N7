@@ -123,8 +123,8 @@ export class GooseBridgeService {
     // Store task
     this.tasks.set(taskId, task);
     
-    // Queue task for execution (async)
-    this.executeTaskAsync(task);
+    // Queue task for execution (async) - don't await
+    setImmediate(() => this.executeTaskAsync(task));
     
     this.logger.log(`Task submitted: ${taskId} (type: ${task.type}, extension: ${task.extensionId})`);
     

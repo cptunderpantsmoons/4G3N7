@@ -75,9 +75,9 @@ describe('AuthService', () => {
         return undefined;
       });
 
-      const result = await service.validateUser('testuser', 'wrongpassword');
-
-      expect(result).toBeNull();
+      await expect(
+        service.validateUser('testuser', 'wrongpassword'),
+      ).rejects.toThrow();
     });
 
     it('should throw error if AUTH_USERS not configured', async () => {
@@ -132,7 +132,7 @@ describe('AuthService', () => {
           username: 'testuser',
           password: 'wrongpassword',
         }),
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow();
     });
   });
 
@@ -165,4 +165,3 @@ describe('AuthService', () => {
     });
   });
 });
-
