@@ -9,15 +9,11 @@
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://github.com/4g3n7/4g3n7/tree/main/docker)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 
-[🌐 Website](https://www.4g3n7.io) • [📚 Documentation](https://docs.4g3n7.io)
+[🌐 Website](https://www.4g3n7.io) • [📚 Documentation](https://docs.4g3n7.io) • [📖 Product Manuals](./PRODUCT_MANUALS/)
 
 </div>
 
 ---
-
-https://github.com/user-attachments/assets/f271282a-27a3-43f3-9b99-b34007fdd169
-
-https://github.com/user-attachments/assets/72a43cf2-bd87-44c5-a582-e7cbe176f37f
 
 ## What is a Desktop Agent?
 
@@ -30,6 +26,28 @@ A desktop agent is an AI that has its own computer. Unlike browser-only agents o
 - Complete complex multi-step workflows across different programs
 
 Think of it as a virtual employee with their own computer who can see the screen, move the mouse, type on the keyboard, and complete tasks just like a human would.
+
+## 🚀 What's New: Goose Bridge Integration
+
+4G3N7 now features the **Goose Bridge Integration**, a powerful extension system that enhances automation capabilities:
+
+### Key Features of Goose Bridge:
+- **Extension Management**: Install, configure, and manage specialized automation extensions
+- **Workflow Orchestration**: Create complex multi-step workflows with conditional logic
+- **Real-time Monitoring**: Track task progress and system health in real-time
+- **Advanced Task Processing**: Enhanced document processing and data extraction
+- **Marketplace Integration**: Access to a growing library of pre-built extensions
+
+### Supported Extensions:
+- **Web Scraper**: Extract data from websites with advanced selectors
+- **API Client**: Connect to external APIs and process responses
+- **Document Processor**: Handle PDFs, DOCX, XLSX with OCR capabilities
+- **Browser Automation**: Advanced browser control and interaction
+- **Office Automation**: Process Microsoft Office documents
+- **IDE Automation**: Control development environments
+- **Communication Tools**: Email and messaging automation
+
+[📖 Learn more about Goose Bridge Integration](./PRODUCT_MANUALS/Integration_Guide/Goose_Bridge_Integration.md)
 
 ## Why Give AI Its Own Computer?
 
@@ -69,7 +87,6 @@ Upload files directly to 4G3N7's desktop and it can:
 ### Deploy in 2 Minutes
 
 **Docker Compose**
-
 ```bash
 git clone https://github.com/4g3n7/4g3n7.git
 cd 4g3n7
@@ -103,11 +120,11 @@ docker-compose -f docker/docker-compose.yml up -d
 - **Takeover Mode**: Take control when you need to help or configure something
 - **Password Manager Support**: Install 1Password, Bitwarden, etc. for automatic authentication
 - **Persistent Environment**: Install programs and they stay available for future tasks
+- **Goose Bridge Extensions**: Enhanced automation with specialized extensions
 
 ## Example Tasks
 
 ### Basic Examples
-
 ```
 "Go to Wikipedia and create a summary of quantum computing"
 "Research flights from NYC to London and create a comparison document"
@@ -115,7 +132,6 @@ docker-compose -f docker/docker-compose.yml up -d
 ```
 
 ### Document Processing
-
 ```
 "Read the uploaded contracts.pdf and extract all payment terms and deadlines"
 "Process these 5 invoice PDFs and create a summary report"
@@ -123,17 +139,22 @@ docker-compose -f docker/docker-compose.yml up -d
 ```
 
 ### Multi-Application Workflows
-
 ```
 "Download last month's bank statements from our three banks and consolidate them"
 "Check all our vendor portals for new invoices and create a summary report"
 "Log into our CRM, export the customer list, and update records in the ERP system"
 ```
 
+### Goose Bridge Extensions
+```
+"Use the web scraper to extract product data from 10 e-commerce sites"
+"Process these documents using OCR and extract all contact information"
+"Automate our monthly reporting workflow using the document processor extension"
+```
+
 ## Programmatic Control
 
 ### Create Tasks via API
-
 ```python
 import requests
 
@@ -148,10 +169,18 @@ response = requests.post('http://localhost:9991/tasks',
     data={'description': 'Review these contracts for important dates'},
     files=files
 )
+
+# Goose Bridge task
+response = requests.post('http://localhost:9992/api/v1/goose/tasks', json={
+    'type': 'web-scrape',
+    'payload': {
+        'url': 'https://example.com',
+        'selectors': ['h1', 'p', '.content']
+    }
+})
 ```
 
 ### Direct Desktop Control
-
 ```bash
 # Take a screenshot
 curl -X POST http://localhost:9990/computer-use \
@@ -169,44 +198,49 @@ curl -X POST http://localhost:9990/computer-use \
 ## Setting Up Your Desktop Agent
 
 ### 1. Deploy 4G3N7
-
 Use one of the deployment methods above to get 4G3N7 running.
 
 ### 2. Configure the Desktop
-
 Use the Desktop tab in the UI to:
-
 - Install additional programs you need
 - Set up password managers for authentication
 - Configure applications with your preferences
 - Log into websites you want 4G3N7 to access
 
-### 3. Start Giving Tasks
+### 3. Set Up Goose Bridge Extensions
+- Browse the extension marketplace
+- Install extensions for your specific needs
+- Configure extension settings
+- Create workflows using the task wizard
 
+### 4. Start Giving Tasks
 Create tasks in natural language and watch 4G3N7 complete them using the configured desktop.
 
 ## Use Cases
 
 ### Business Process Automation
-
 - Invoice processing and data extraction
 - Multi-system data synchronization
 - Report generation from multiple sources
 - Compliance checking across platforms
 
 ### Development & Testing
-
 - Automated UI testing
 - Cross-browser compatibility checks
 - Documentation generation with screenshots
 - Code deployment verification
 
 ### Research & Analysis
-
 - Competitive analysis across websites
 - Data gathering from multiple sources
 - Document analysis and summarization
 - Market research compilation
+
+### Enterprise Integration
+- ERP system automation
+- CRM data management
+- Email and communication automation
+- Document workflow automation
 
 ## Architecture
 
@@ -216,7 +250,40 @@ Create tasks in natural language and watch 4G3N7 complete them using the configu
 - **Agent**: NestJS service that coordinates AI and desktop actions
 - **UI**: Next.js application for task management
 - **AI Support**: Works with Anthropic Claude, OpenAI GPT, Google Gemini
+- **Goose Bridge**: Extension system for enhanced automation
 - **Deployment**: Docker containers for easy self-hosting
+
+### System Components
+```
+┌─────────────────────────────────────────────────────────┐
+│                    4G3N7 UI (Next.js)                   │
+│  ┌─────────────────┐  ┌───────────────────────────────┐ │
+│  │   Task Manager  │  │   Goose Bridge Integration    │ │
+│  └─────────────────┘  └───────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+                              │ HTTP/WebSocket
+                              ▼
+┌─────────────────────────────────────────────────────────┐
+│                4G3N7 Agent (NestJS)                     │
+│  ┌─────────────────┐  ┌───────────────────────────────┐ │
+│  │  Task Manager   │  │   Goose Bridge Service        │ │
+│  └─────────────────┘  └───────────────────────────────┘ │
+│  ┌─────────────────┐  ┌───────────────────────────────┐ │
+│  │  AI Providers   │  │   File Storage Service        │ │
+│  └─────────────────┘  └───────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+                              │ gRPC/HTTP
+                              ▼
+┌─────────────────────────────────────────────────────────┐
+│              4G3N7 Desktop Daemon                       │
+│  ┌─────────────────┐  ┌───────────────────────────────┐ │
+│  │  VNC Server     │  │   Computer Use Service        │ │
+│  └─────────────────┘  └───────────────────────────────┘ │
+│  ┌─────────────────┐  ┌───────────────────────────────┐ │
+│  │  Desktop Env.   │  │   Input Tracking              │ │
+│  └─────────────────┘  └───────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+```
 
 ## Why Self-Host?
 
@@ -224,11 +291,11 @@ Create tasks in natural language and watch 4G3N7 complete them using the configu
 - **Full Control**: Customize the desktop environment as needed
 - **No Limits**: Use your own AI API keys without platform restrictions
 - **Flexibility**: Install any software, access any systems
+- **Enterprise Ready**: Scale to meet your organization's needs
 
 ## Advanced Features
 
 ### Multiple AI Providers
-
 Use any AI provider through our [LiteLLM integration](https://docs.4g3n7.io/deployment/litellm):
 
 - Azure OpenAI
@@ -236,10 +303,17 @@ Use any AI provider through our [LiteLLM integration](https://docs.4g3n7.io/depl
 - Local models via Ollama
 - 100+ other providers
 
+### Goose Bridge Extensions
+Enhance 4G3N7 with specialized extensions:
+
+- **Web Automation**: Advanced web scraping and browser control
+- **Document Processing**: PDF, DOCX, XLSX with OCR capabilities
+- **API Integration**: Connect to external services and APIs
+- **Data Analysis**: Extract insights from complex datasets
+- **Communication**: Email, messaging, and notification automation
+
 ### Enterprise Deployment
-
 Deploy on Kubernetes with Helm:
-
 ```bash
 # Clone the repository
 git clone https://github.com/4g3n7/4g3n7.git
@@ -252,10 +326,28 @@ helm install 4g3n7 ./helm \
 
 [Enterprise deployment guide →](https://docs.4g3n7.io/deployment/helm)
 
+## Documentation
+
+### Product Manuals
+Comprehensive documentation is available in the [PRODUCT_MANUALS](./PRODUCT_MANUALS/) directory:
+
+- [📖 User Guide](./PRODUCT_MANUALS/User_Guide/README.md) - For end-users
+- [🔧 Administrator Guide](./PRODUCT_MANUALS/Administrator_Guide/README.md) - For system administrators
+- [💻 Developer Guide](./PRODUCT_MANUALS/Developer_Guide/README.md) - For developers
+- [📚 API Reference](./PRODUCT_MANUALS/API_Reference/README.md) - Complete API documentation
+- [🔗 Integration Guide](./PRODUCT_MANUALS/Integration_Guide/README.md) - Integration documentation
+
+### Online Documentation
+- **Documentation**: Comprehensive guides at [docs.4g3n7.io](https://docs.4g3n7.io)
+- **API Reference**: Complete API documentation and examples
+- **Deployment Guides**: Docker, Kubernetes, and cloud deployment
+- **Integration Guides**: Goose Bridge and third-party integrations
+
 ## Community & Support
 
 - **Documentation**: Comprehensive guides at [docs.4g3n7.io](https://docs.4g3n7.io)
 - **GitHub Issues**: Report bugs and request features
+- **Product Manuals**: Detailed documentation in [PRODUCT_MANUALS](./PRODUCT_MANUALS/)
 
 ## Contributing
 
